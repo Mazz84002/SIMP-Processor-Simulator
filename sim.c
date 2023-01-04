@@ -27,12 +27,14 @@ const char *IOREGNAMES[23] = { "irq0enable", "irq1enable", "irq2enable", "irq0st
                                "monitoraddr", "monitordata", "monitorcmd"
 };
 void print_REG(){
+    printf("REG DECIMAL - ");
     for (int i = 0; i < 16; ++i) {
-        printf("(%d,%d),", i, REG[i]);
+        printf("(%s,%d),", REGNAMES[i], REG[i]);
     }
     printf("\n");
+    printf("REG HEX - ");
     for (int i = 0; i < 16; ++i) {
-        printf("(%d,%X)", i, REG[i]);
+        printf("(%s,%X)", REGNAMES[i], REG[i]);
     }
     printf("\n");
 }
@@ -42,7 +44,7 @@ void print_IOREG(){
         if (i == 8 || i == 11 || i == 14 || i == 18 || i == 20){
             printf(" | ");
         }
-        printf("(%d,%X),", i, IOREG[i]);
+        printf("(%s,%X),", IOREGNAMES[i], IOREG[i]);
     }
     printf("\n");
 }
@@ -113,6 +115,14 @@ void create_temp_memory(FILE* memin, int MEM[]){
 
 void print_memory(int MEM[]){
     for (int i = 0; i < 4096; ++i) {
+        if (MEM[i] != 0)
+            printf("(%d,%05X) ", i, MEM[i]);
+    }
+    printf("\n");
+}
+
+void print_memory_part(int MEM[], int start, int end){
+    for (int i = start; i < end; ++i) {
         if (MEM[i] != 0)
             printf("(%d,%05X) ", i, MEM[i]);
     }
@@ -368,6 +378,15 @@ void interrupt_off(){
 }
 
 int check_irq(){ // gives one if we must go into an ISR
+    if ((IOREG[0] && IOREG[3])){
+        printf("irq0 on\n");
+    }
+    if ((IOREG[1] && IOREG[4])){
+        printf("irq0 on\n");
+    }
+    if ((IOREG[2] && IOREG[5])){
+        printf("irq0 on\n");
+    }
     return((IOREG[0] && IOREG[3]) || (IOREG[1] && IOREG[4]) || (IOREG[2] && IOREG[5]));
 }
 
@@ -478,14 +497,16 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
         printf("WE ARE IN DISK READING\n");
         // we need to read sector `disksector` into MEM[`diskbuffer`]
         int buffer = IOREG[16];
+        printf("WRITTING FROM DISK TO MEMORY");
+        printf("THE LOCATION IN THE MEMORY IS %d\n", buffer);
+        printf("THE SECTOR NUMBER IS %d\n", IOREG[15]);
         int sector_num = IOREG[15];
         for (int j = 0; j<128; j++){
             MEM[j+buffer] = DISK[sector_num][j];
         }
+        print_memory_part(MEM, buffer, buffer+128);
         // incrementing the clock
-        for (int k = 0; k<1024; k++){
-            increment_clk(inst, irq2);
-        }
+        IOREG[8]+=1024;
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
@@ -499,9 +520,7 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
             DISK[sector_num][j] = MEM[j+buffer];
         }
         // incrementing the clock
-        for (int k = 0; k<1024; k++){
-            increment_clk(inst, irq2);
-        }
+        IOREG[8]+=1024;
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
@@ -681,6 +700,5 @@ int main(){
     fclose(display7seg);
     fclose(diskout);
     fclose(monitor);
-    free(irq2);
     return 0;
 }

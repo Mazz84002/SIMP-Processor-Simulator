@@ -1,28 +1,66 @@
-.word 0x100 0 # choose memory adress for diskbuffer.
-add $s0, $zero, $imm, 0x100 #set $s0 to the memory 0X100 
-add $t1, $zero, $imm, 0 # index, set to 0
-add $t3, $zero, $imm, 7 # max value for read
-out $imm, $imm, $zero, 1 # enable irq1, with two registers
-add $t0, $zero, $imm, 2 # use irq2 to fire up the first read/write at the 10'th clock cycle
-out $imm, $zero, $t0, 1 # enable irq1, with two registers
-add $t0, $zero, $imm, 6 # set $t0=6 for irqhandler
-out $imm, $t0, $zero, L2 # set irqhandler as L2
-add $t0, $zero, $imm, 3 # set t0 to the max number of read sector
-L1:
-beq $imm, $zero,$zero,L1 # stay here till last write
-L2:
-out $t1, $zero, $imm, 15 # set discsector to current sector for read/write
-out $s0, $zero, $imm, 16 # set $s0 as memory of buffer
-bgt $imm, $t1, $t0, L3 # jump to write i too big
-add $t2, $zero, $imm, 1 #set $t2 as command for disk(read)
-out $t2, $zero, $imm, 14 #read to disk buffer
-add $t1, $t1, $imm,4 # add 4 in order to write
-reti $zero, $zero, $zero, 0 #return from irq call
-L3:
-add $t2, $zero, $imm, 2 #set $t2 as command for disk(write)
-out $t2, $zero, $imm, 14 #write to disk sector
-bge $imm, $t1,$t3,L4 # if we finish jump to L4
-add $t1, $t1, $imm, -3 #set $t1 to the next sector fo read
-reti $zero, $zero, $zero, 0 #return from irq call
-L4:
-halt $zero, $zero, $zero, 0 # will reach here when done
+.word 0x100 1                       # sector1 at 256 in memin
+.word 0x101 5                       # sector2 at 257 in memin
+add $t0, $zero, $imm, 1             # $t0 = 1
+out $t0, $zero, $imm, 0             # enable irq0
+out $t0, $zero, $imm, 1             # enable irq1
+out $t0, $zero, $imm, 2             # enable irq2
+add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
+out $t2, $zero, $imm, 6				# set irqhandler as SUM1
+add $t0, $zero, $imm, 128           # set $t0 = 128
+lw $a0, $zero, $imm, 256            # set $a0 to address of sector1
+out $a0, $zero, $imm, 15            # write the disk sector to IOREG
+bgt $imm, $zero, $a0, DIRECTHAULT   # go to hault if sector1<0
+bgt $imm, $a0, $t0, DIRECTHAULT     # go to hault if sector1>128
+add $a1, $zero, $imm, 2048          # decide buffer for sector1 in $a1
+out $a1, $zero, $imm, 16            # write the disk sector to IOREG
+add $a3, $zero, $imm, 7             # $a3 - max value for read
+add $t0, $zero, $imm, 1             # $t0 = 1
+add $v0, $zero, $zero, 0            # initialise sum of sector1 to be 0
+add $t1, $zero, $zero, 0            # $t1 = 0 (functions as an index)
+out $t0, $zero, $imm, 14            # read the given sector to memory - diskcmd = 1
+out $t0, $zero, $imm, 1             # enable irqstatus0
+add $t0, $zero, $imm, 128           # set $t0 = 128
+add $t2, $zero, $imm, SUM_SEC_SECTOR		    # $t2 = address of SUM2
+out $t2, $zero, $imm, 6				# set irqhandler as SUM2
+lw $a0, $zero, $imm, 257            # set $a0 to address of sector2
+out $a0, $zero, $imm, 15            # write the disk sector to IOREG
+bgt $imm, $zero, $a0, DIRECTHAULT   # go to hault if address of sector2<0
+bgt $imm, $a0, $t0, DIRECTHAULT     # go to hault if address of sector2>128
+add $a1, $zero, $imm, 2178          # decide buffer for sector2 in $a1
+out $a1, $zero, $imm, 16            # write the disk sector to IOREG
+add $t0, $zero, $imm, 1             # $t0 = 1
+add $t1, $zero, $zero, 0            # $t1 = 0 (functions as an index)
+add $a3, $zero, $imm, 7             # $a3 - max value for read
+add $v1, $zero, $zero, 0            # initialise sum of sector2 to be 0
+out $t0, $zero, $imm, 14            # read the given sector to memory - diskcmd = 1
+out $t0, $zero, $imm, 1             # enable irqstatus0
+sw $s1, $zero, $imm, 256           # store result of sector 1 at 0x100
+sw $s2, $zero, $imm, 257           # store result of sector 2 at 0x101
+bge $imm, $s1, $s2, STORE           # if $v0 > $v1, jump store
+sw $s2, $zero, $imm, 258            # store the bigger value at 0x102
+halt $zero, $zero, $zero, 0
+SUM_FIRST_SECTOR:
+bgt $imm, $t1, $a3, MEDIATOR1        # when you read the first eight entries, go to mediator
+add $a1, $t1, $imm, 2048            # $a1 - absolute address of index i (=$t1) in MEM
+lw $t0, $a1, $imm, 0               # $t0 has the ith element
+add $t1, $t1, $imm, 1               # i = i + 1
+add $v0, $v0, $t0, 0                # $v0 = $v0 + $t0
+jal $ra, $imm, $zero, SUM_FIRST_SECTOR          # jump back to SUM2
+MEDIATOR1:
+add $s1, $v0, $zero, 0              # store sector1 sum in $s1
+reti $zero, $zero, $zero, 0         # return instruction
+SUM_SEC_SECTOR:
+bgt $imm, $t1, $a3, MEDIATOR2        # when you read the first eight entries, go to mediator
+add $a1, $t1, $imm, 2178            # $a1 - absolute address of index i (=$t1) in MEM
+lw $t0, $a1, $imm, 0               # $t0 has the ith element
+add $t1, $t1, $imm, 1               # i = i + 1
+add $v0, $v0, $t0, 0                # $v0 = $v0 + $t0
+jal $ra, $imm, $zero, SUM_SEC_SECTOR          # jump back to SUM2
+MEDIATOR2:
+add $s2, $v0, $zero, 0              # store sector1 sum in $s1
+reti $zero, $zero, $zero, 0         # return instruction
+STORE:
+sw $s1, $zero, $imm, 258            # store the bigger value at 0x102
+halt $zero, $zero, $zero, 0
+DIRECTHAULT:
+halt $zero, $zero, $zero, 0         # hault instruction
