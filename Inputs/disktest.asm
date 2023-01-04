@@ -34,26 +34,26 @@ add $a3, $zero, $imm, 7             # $a3 - max value for read
 add $v1, $zero, $zero, 0            # initialise sum of sector2 to be 0
 out $t0, $zero, $imm, 14            # read the given sector to memory - diskcmd = 1
 out $t0, $zero, $imm, 1             # enable irqstatus0
-sw $s1, $zero, $imm, 256           # store result of sector 1 at 0x100
-sw $s2, $zero, $imm, 257           # store result of sector 2 at 0x101
+sw $s1, $zero, $imm, 256            # store result of sector 1 at 0x100
+sw $s2, $zero, $imm, 257            # store result of sector 2 at 0x101
 bge $imm, $s1, $s2, STORE           # if $v0 > $v1, jump store
 sw $s2, $zero, $imm, 258            # store the bigger value at 0x102
 halt $zero, $zero, $zero, 0
 SUM_FIRST_SECTOR:
 bgt $imm, $t1, $a3, MEDIATOR1        # when you read the first eight entries, go to mediator
-add $a1, $t1, $imm, 2048            # $a1 - absolute address of index i (=$t1) in MEM
-lw $t0, $a1, $imm, 0               # $t0 has the ith element
-add $t1, $t1, $imm, 1               # i = i + 1
-add $v0, $v0, $t0, 0                # $v0 = $v0 + $t0
+add $a1, $t1, $imm, 2048             # $a1 - absolute address of index i (=$t1) in MEM
+lw $t0, $a1, $imm, 0                 # $t0 has the ith element
+add $t1, $t1, $imm, 1                # i = i + 1
+add $v0, $v0, $t0, 0                 # $v0 = $v0 + $t0
 jal $ra, $imm, $zero, SUM_FIRST_SECTOR          # jump back to SUM2
 MEDIATOR1:
-add $s1, $v0, $zero, 0              # store sector1 sum in $s1
-reti $zero, $zero, $zero, 0         # return instruction
+add $s1, $v0, $zero, 0               # store sector1 sum in $s1
+reti $zero, $zero, $zero, 0          # return instruction
 SUM_SEC_SECTOR:
 bgt $imm, $t1, $a3, MEDIATOR2        # when you read the first eight entries, go to mediator
-add $a1, $t1, $imm, 2178            # $a1 - absolute address of index i (=$t1) in MEM
-lw $t0, $a1, $imm, 0               # $t0 has the ith element
-add $t1, $t1, $imm, 1               # i = i + 1
+add $a1, $t1, $imm, 2178             # $a1 - absolute address of index i (=$t1) in MEM
+lw $t0, $a1, $imm, 0                 # $t0 has the ith element
+add $t1, $t1, $imm, 1                # i = i + 1
 add $v0, $v0, $t0, 0                # $v0 = $v0 + $t0
 jal $ra, $imm, $zero, SUM_SEC_SECTOR          # jump back to SUM2
 MEDIATOR2:

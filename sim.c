@@ -651,6 +651,16 @@ void generate_regout(FILE* regout){
     }
 }
 
+void print_monitor(int MONITOR[]){
+    for (int i = 0; i < 256; i++){
+        for (int j = 0; j < 256; j++){
+            printf("%d ", MONITOR[j+(i%256)]);
+        }
+        printf("\n");
+    }
+    
+}
+
 int main(){
     IOREG[13] = 0xffffffff; // timermax - the only value in IOREG that is not initialised to 0
     FILE *diskin, *irq2in, *memin, *memout, *regout, *trace, *hwregtrace, *cycles, *leds, *display7seg, *diskout, *monitor;
