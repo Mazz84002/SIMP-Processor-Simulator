@@ -115,6 +115,15 @@ void print2D(struct label* root)
     print2DUtil(root, 0);
 }
 
+void free_tree(struct label* root){
+    if (root == NULL){
+        return;
+    }
+    free_tree(root->left);
+    free_tree(root->right);
+    free(root);
+}
+
 // -------------------------------- TOKEN EXTRACTOR ----------------------------------
 
 // define a structure that will store the opcode and registers in an instruction
@@ -378,6 +387,7 @@ void assembler(int MEM[], int pc, int label_counter, FILE* asmfile, FILE* memin)
             }
         }
     }
+    free_tree(lroot);
 }
 
 FILE* open_file(char name[], char mode[]){ // loads a file
@@ -413,7 +423,7 @@ void print_to_memin(int MEM[], FILE* memin){
 int main(){
     FILE* asmfile, *memin;
     char path[500];
-    asmfile = open_file("Inputs/disktest.asm", "r");
+    asmfile = open_file("Inputs/square.asm", "r");
     memin = open_file("Outputs/memin.txt", "w");
     int pc = 0;
     int label_counter = 0;

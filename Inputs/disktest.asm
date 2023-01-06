@@ -3,7 +3,6 @@
 add $t0, $zero, $imm, 1             # $t0 = 1
 out $t0, $zero, $imm, 0             # enable irq0
 out $t0, $zero, $imm, 1             # enable irq1
-out $t0, $zero, $imm, 2             # enable irq2
 add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
 out $t2, $zero, $imm, 6				# set irqhandler as SUM1
 add $t0, $zero, $imm, 128           # set $t0 = 128
