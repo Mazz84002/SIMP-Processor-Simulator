@@ -11,7 +11,7 @@
 #define MAX_LINE_LENGTH 100
 #define true 1
 #define false 0
-static int is_Rtype = 1; // 0 if the instruction is I-type
+static int is_Rtype = 1; // 1 if the instruction is R-type
 
 const char *REGNAMES[REGSIZE] = {
         "zero", "imm", "v0",

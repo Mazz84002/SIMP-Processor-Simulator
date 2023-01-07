@@ -506,7 +506,9 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
         }
         print_memory_part(MEM, buffer, buffer+128);
         // incrementing the clock
-        IOREG[8]+=1024;
+        for (int i = 0; i<1024; i++){
+            increment_clk(inst, irq2);
+        }
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
@@ -520,7 +522,9 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
             DISK[sector_num][j] = MEM[j+buffer];
         }
         // incrementing the clock
-        IOREG[8]+=1024;
+        for (int i = 0; i<1024; i++){
+            increment_clk(inst, irq2);
+        }
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
@@ -710,5 +714,6 @@ int main(){
     fclose(display7seg);
     fclose(diskout);
     fclose(monitor);
+    free(irq2);
     return 0;
 }
