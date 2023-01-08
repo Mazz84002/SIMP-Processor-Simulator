@@ -5,16 +5,16 @@ add $t2, $zero, $imm, L3			# $t1 = address of L3
 out $t2, $zero, $imm, 6				# set irqhandler as L3
 add $a0, $zero, $imm, 1             # starting point of input relative add
 add $a1, $zero, $imm, 3839          # end point of the function 3839 = 4096-257
-add $s0, $zero, $imm, 1            # fib(1)
-sw $s0, $zero, $imm, 257            # store fib(1)
-add $s1, $zero, $imm, 1            # fib(2)
+add $s0, $zero, $imm, 1             # fib(1)
+sw $s0, $zero, $imm, 256            # store fib(1)
+add $s1, $zero, $imm, 1             # fib(2)
 sw $s1, $zero, $imm, 257            # store fib(2)
 jal $ra, $imm, $zero, fib			# calc $v0 = fib(x)
 fib:
-blt $imm, $s2, $zero, overflow      # if fib(x) < 0, overflow
 bgt $imm, $a0, 3839, overflow       # if loc > 4096, overflow
 add $s2, $zero, $zero, 0            # $s2 = 0 for this loop
 add $s2, $s0, $s1, 0                # $s2 = $s0+$s1, $s2 has next fib num
+blt $imm, $s2, $zero, overflow      # if fib(x) < 0, overflow
 sw $s2, $a0, $imm, 257              # store word at current loc
 add $s0, $zero, $zero, 0
 add $s0, $zero, $s1, 0              # $s0 = $s1

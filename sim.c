@@ -80,7 +80,7 @@ int is_itype(struct instruction inst){ // find out the type of instruction
     return 0;
 }
 
-struct instruction decode(unsigned machine_code, int pc, int i, int MEM[]){
+struct instruction decode(unsigned machine_code, int pc, int i, int MEM[]){ // gives back indivisual elements of the instruction
     struct instruction inst;
     inst.rt = machine_code & 0x0000000F;
     inst.rs = (machine_code & 0x000000F0)/(16);
@@ -281,12 +281,18 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
     }
     else if (inst.op == 16){ // lw
         REG[inst.rd] = MEM[REG[inst.rs] + REG[inst.rt]];
-        pc_inc = 2;
+        pc_inc = 1;
+        if (inst.inst_type == 1){
+            pc_inc = 2;
+        }
     }
     else if (inst.op == 17){ // sw
         printf("Storing at %d the value %d\n", REG[inst.rs] + REG[inst.rt], REG[inst.rd]);
         MEM[REG[inst.rs] + REG[inst.rt]] = REG[inst.rd];
-        pc_inc = 2;
+        pc_inc = 1;
+        if (inst.inst_type == 1){
+            pc_inc = 2;
+        }
     }
     else if (inst.op == 18){ // reti
         pc = IOREG[7];

@@ -30,6 +30,7 @@ const char *OPCODES[] = {"add", "sub", "mul",
 
 // ----------------------------------- Remove space from string -----------------------------
 
+// removes all the \t, spaces, and all the comments from a line
 char *remove_white_spaces(char *str){
     int i = 0, j = 0;
     while (str[i] != '#' && str[i] != '\0'){
@@ -40,8 +41,8 @@ char *remove_white_spaces(char *str){
     str[j] = '\0';
     return str;
 }
-
-int h2d(char line[]){ // converts hexadecimal to integer
+// converts 5 byte hexadecimal to integer with sign extension
+int h2d(char line[]){
     if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || line[0] == 'E'  | line[0] == 'F'){
         return (0xFFF00000 + strtol(line, (char **)NULL, 16));
     }
@@ -76,6 +77,7 @@ struct label* insert_label(struct label* label, int label_loc, char *label_name)
         label->right = insert_label(label->right, label_loc, label_name);
     return label;
 }
+// finds a label_name in the BST
 int label_loc(struct label* label, char *label_name){
     if (strcmp(label_name, label->label_name) < 0)
         return label_loc(label->left, label_name);
@@ -84,7 +86,7 @@ int label_loc(struct label* label, char *label_name){
     else
         return label->label_loc;
 }
-
+// prints a BST
 void print2DUtil(struct label* root, int space)
 {
     // Base case
@@ -115,6 +117,7 @@ void print2D(struct label* root)
     print2DUtil(root, 0);
 }
 
+// free the memory from BST
 void free_tree(struct label* root){
     if (root == NULL){
         return;
@@ -138,6 +141,7 @@ struct instruction{
 int has_label(char *token);
 int c2i(char *str);
 
+// Extract all the op, regs and imm from instruction
 struct instruction inst_fetch(char line[], struct instruction inst){
     strcmp(line, remove_white_spaces(line));
     char* token = NULL;
@@ -252,7 +256,7 @@ int c2i(char *str){ // converts the last token into integer
 
 // -------------------------------- WORD -----------------------------------
 
-int has_word(char line[]){
+int has_word(char line[]){ // checks if a line has .word
     if (strstr(".word", line)){
         return 1;
     }
@@ -269,6 +273,7 @@ struct encoded_instruction{
     int imm;
 };
 
+// Converts all the instrcution to theor corresponding numbers
 struct encoded_instruction encode_inst(struct instruction inst, struct encoded_instruction enc_inst, struct label* lroot){
     enc_inst.op = op_num(inst.op);
     enc_inst.rd = reg_num(inst.rd);
@@ -282,11 +287,11 @@ struct encoded_instruction encode_inst(struct instruction inst, struct encoded_i
     return enc_inst;
 }
 
-int is_itype(struct encoded_instruction enc_inst){
+int is_itype(struct encoded_instruction enc_inst){ // returns 1 for i_type inst
     return ( (enc_inst.rt==1)||(enc_inst.rs==1)||(enc_inst.rd==1) );
 }
 
-int generte_machine_code(struct encoded_instruction enc_inst){
+int generte_machine_code(struct encoded_instruction enc_inst){ // gives back the machine code for encoded instruction
     int hex = 0;
     hex = enc_inst.op*4096 + enc_inst.rd*256 + enc_inst.rs*16 + enc_inst.rt*1;
     return hex;
@@ -399,7 +404,7 @@ FILE* open_file(char name[], char mode[]){ // loads a file
     return f;
 }
 
-void print_MEM(int MEM[]){
+void print_MEM(int MEM[]){ // helper to print MEMORY
     for (int i = 0; i < 4096; ++i) {
         printf("%05X\n", MEM[i]);
     }
@@ -413,7 +418,7 @@ int last_non_zero_element(int A[], int size){ // takes in an array and returns t
     return pos;
 }
 
-void print_to_memin(int MEM[], FILE* memin){
+void print_to_memin(int MEM[], FILE* memin){ // write to memin from MEM[] at the end
     int size = last_non_zero_element(MEM, 4096);
     for (int i = 0; i <= size; ++i) {
         fprintf(memin, "%05X\n", MEM[i] & 0x000FFFFF);
