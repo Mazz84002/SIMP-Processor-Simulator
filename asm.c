@@ -428,7 +428,7 @@ void print_to_memin(int MEM[], FILE* memin){ // write to memin from MEM[] at the
 int main(){
     FILE* asmfile, *memin;
     char path[500];
-    asmfile = open_file("Inputs/disktest.asm", "r");
+    asmfile = open_file("Inputs/square.asm", "r");
     memin = open_file("Outputs/memin.txt", "w");
     int pc = 0;
     int label_counter = 0;
