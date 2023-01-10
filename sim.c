@@ -434,7 +434,7 @@ int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trac
 // ---------------------------------------------- TIMER ---------------------------------------
 
 void update_timer(){ // updates the timer for a line in file (plus handeling the interrupts) - to be run after very clock update
-    IOREG[3] = 0; // restting irqstatus0
+    //IOREG[3] = 0; // resetting irqstatus0
     IOREG[12]++;
     if (IOREG[11] == 1){ // enable interrupt when timerenable = 1
         IOREG[0] = 1;

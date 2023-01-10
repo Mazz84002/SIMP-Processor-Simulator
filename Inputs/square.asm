@@ -1,7 +1,7 @@
-.word 0x100 36   #Set the location of the upper left corner of the square to 0x100
-.word 0x101 100  #Set the length of each side of the square to memory location 0x101
+.word 0x100 0   #Set the location of the upper left corner of the square to 0x100
+.word 0x101 255  #Set the length of each side of the square to memory location 0x101
 add $t0, $zero, $imm, 1	    # $t0 = 1
-out $t0, $zero, $imm, 2	   #enable irq2
+out $t0, $zero, $imm, 0	   #enable irq0
 add $t0, $zero, $imm, draw_line	  # $t0 = address of draw_line
 out $t0, $zero, $imm, 6	   # set irqhandler as draw_line
 lw $t0, $zero, $imm, 256   #Set $t0 to be the value of 0x100 (first location)
@@ -10,11 +10,14 @@ add $s0, $t1, $t0, 0   #set $s0 = $t1 + $t0
 add $t2, $zero, $imm, 256   #$t2 = 256
 blt $imm, $t0, $zero, error   #if $t0 < 0 jump to error
 blt $imm, $t1, $zero, error   #if t1 < 0 jump to error
-bgt $imm, $s0, $t2, error   #if s0 > $t2 = 256
+bge $imm, $s0, $t2, error   #if s0 > $t2 = 256
 add $s1, $t1, $zero, 0   #s1 = $t1 = length of square
 add $t2, $zero, $imm, 255   #$t2 = 255
 out $t2, $zero, $imm, 21   #set pixel color to white
 add $t2, $zero, $imm, 1  #$t2 = 1-this will be used to draw the pixels to be white
+add $a0, $zero, $imm, 1     # $a0 = 1
+out $a0, $zero, $imm, 3     # enable irqstatus0
+halt $zero, $zero, $zero, 0   # exit the program
 draw_line:
 out $t0, $zero, $imm, 20   #update address of where we will place the pixel to $t0
 out $t2, $zero, $imm, 22   #set the pixel of the current address to white 
@@ -22,8 +25,7 @@ add $t0, $t0, $imm, 1   #$t0++ means going 1 column to the right and remaining o
 sub $t1, $t1, $imm, 1   #$t1-- means decreasing the length of the square
 bne $imm, $t1, $zero, draw_line   #if $t1 -originally
 bne $imm, $s1, $zero, increment_row  #if $s1 != 0  jump to increment_row
-out $zero, $zero, $imm, 5   #clear irq2 status
-halt $zero, $zero, $zero, 0   # exit the program
+reti $zero, $zero, $zero, 0     # reti
 increment_row:
 lw $t1, $zero, $imm, 257  #change the value of $t1 back to the original length of the square
 add $t0, $t0, $imm, 256   #$t0 += 256 -go down a row and remain on the same column-

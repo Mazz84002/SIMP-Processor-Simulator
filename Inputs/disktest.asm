@@ -1,10 +1,13 @@
-.word 0x100 1                       # sector1 at 256 in memin
-.word 0x101 5                       # sector2 at 257 in memin
+.word 0x100 0                       # sector1 at 256 in memin
+.word 0x101 300                       # sector2 at 257 in memin
 add $t0, $zero, $imm, 1             # $t0 = 1
-out $t0, $zero, $imm, 0             # enable irq0
 out $t0, $zero, $imm, 1             # enable irq1
 add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
 out $t2, $zero, $imm, 6				# set irqhandler as SUM1
+add $sp, $sp, $imm, -3              # make space in stack
+sw $s2, $sp, $imm, 2                # store $s0 in stack
+sw $s1, $sp, $imm, 1                # store $s1 in stack
+sw $s0, $sp, $imm, 0                # store $s2 in stack
 add $t0, $zero, $imm, 128           # set $t0 = 128
 lw $a0, $zero, $imm, 256            # set $a0 to address of sector1
 out $a0, $zero, $imm, 15            # write the disk sector to IOREG
@@ -37,6 +40,10 @@ sw $s1, $zero, $imm, 256            # store result of sector 1 at 0x100
 sw $s2, $zero, $imm, 257            # store result of sector 2 at 0x101
 bge $imm, $s1, $s2, STORE           # if $v0 > $v1, jump store
 sw $s2, $zero, $imm, 258            # store the bigger value at 0x102
+lw $s0, $sp, $imm, 0                # restore $s0
+lw $s1, $sp, $imm, 1                # restore $s1
+lw $s2, $sp, $imm, 2                # restore $s2
+add $sp, $sp, $imm, 3               # clear stack
 halt $zero, $zero, $zero, 0
 SUM_FIRST_SECTOR:
 bgt $imm, $t1, $a3, MEDIATOR1        # when you read the first eight entries, go to mediator
@@ -53,13 +60,21 @@ bgt $imm, $t1, $a3, MEDIATOR2        # when you read the first eight entries, go
 add $a1, $t1, $imm, 2178             # $a1 - absolute address of index i (=$t1) in MEM
 lw $t0, $a1, $imm, 0                 # $t0 has the ith element
 add $t1, $t1, $imm, 1                # i = i + 1
-add $v0, $v0, $t0, 0                # $v0 = $v0 + $t0
+add $v0, $v0, $t0, 0                 # $v0 = $v0 + $t0
 jal $ra, $imm, $zero, SUM_SEC_SECTOR          # jump back to SUM2
 MEDIATOR2:
 add $s2, $v0, $zero, 0              # store sector1 sum in $s1
 reti $zero, $zero, $zero, 0         # return instruction
 STORE:
 sw $s1, $zero, $imm, 258            # store the bigger value at 0x102
+lw $s0, $sp, $imm, 0                # restore $s0
+lw $s1, $sp, $imm, 1                # restore $s1
+lw $s2, $sp, $imm, 2                # restore $s2
+add $sp, $sp, $imm, 3               # clear stack
 halt $zero, $zero, $zero, 0
 DIRECTHAULT:
+lw $s0, $sp, $imm, 0                # restore $s0
+lw $s1, $sp, $imm, 1                # restore $s1
+lw $s2, $sp, $imm, 2                # restore $s2
+add $sp, $sp, $imm, 3               # clear stack
 halt $zero, $zero, $zero, 0         # hault instruction
