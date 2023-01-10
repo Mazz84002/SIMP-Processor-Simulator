@@ -1,16 +1,19 @@
 .word 0x100 0   #Set the location of the upper left corner of the square to 0x100
-.word 0x101 255  #Set the length of each side of the square to memory location 0x101
+.word 0x101 257  #Set the length of each side of the square to memory location 0x101
 add $t0, $zero, $imm, 1	    # $t0 = 1
 out $t0, $zero, $imm, 0	   #enable irq0
 add $t0, $zero, $imm, draw_line	  # $t0 = address of draw_line
 out $t0, $zero, $imm, 6	   # set irqhandler as draw_line
 lw $t0, $zero, $imm, 256   #Set $t0 to be the value of 0x100 (first location)
 lw $t1, $zero, $imm, 257   #set $t1 to be the valoe of 0x101 (square length)
-add $s0, $t1, $t0, 0   #set $s0 = $t1 + $t0
-add $t2, $zero, $imm, 256   #$t2 = 256
 blt $imm, $t0, $zero, error   #if $t0 < 0 jump to error
 blt $imm, $t1, $zero, error   #if t1 < 0 jump to error
-bge $imm, $s0, $t2, error   #if s0 > $t2 = 256
+out_of_bounds:
+sub $t0, $t0, $imm, 256		#t0 -= 256 (this is to go up a row)
+bgt $imm, $t0, $zero, out_of_bounds			#if the new $t0 > 0, run the loop a
+add $s0, $t0, $t1, 0		#$s0 = $t0 + $t1 (the length of the square plus the new value of t0)
+bgt $imm, $s0, $zero, error		#if s0 > 0 jump to error (the monitor will print out of bounds)
+lw $t0, $zero, $imm, 256   #Set $t0 to be the value of 0x100 (first location)
 add $s1, $t1, $zero, 0   #s1 = $t1 = length of square
 add $t2, $zero, $imm, 255   #$t2 = 255
 out $t2, $zero, $imm, 21   #set pixel color to white

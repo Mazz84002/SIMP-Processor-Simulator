@@ -1,5 +1,5 @@
 .word 0x100 0                       # sector1 at 256 in memin
-.word 0x101 300                       # sector2 at 257 in memin
+.word 0x101 5                       # sector2 at 257 in memin
 add $t0, $zero, $imm, 1             # $t0 = 1
 out $t0, $zero, $imm, 1             # enable irq1
 add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
@@ -20,7 +20,6 @@ add $t0, $zero, $imm, 1             # $t0 = 1
 add $v0, $zero, $zero, 0            # initialise sum of sector1 to be 0
 add $t1, $zero, $zero, 0            # $t1 = 0 (functions as an index)
 out $t0, $zero, $imm, 14            # read the given sector to memory - diskcmd = 1
-out $t0, $zero, $imm, 1             # enable irqstatus0
 add $t0, $zero, $imm, 128           # set $t0 = 128
 add $t2, $zero, $imm, SUM_SEC_SECTOR		    # $t2 = address of SUM2
 out $t2, $zero, $imm, 6				# set irqhandler as SUM2
@@ -35,7 +34,6 @@ add $t1, $zero, $zero, 0            # $t1 = 0 (functions as an index)
 add $a3, $zero, $imm, 7             # $a3 - max value for read
 add $v1, $zero, $zero, 0            # initialise sum of sector2 to be 0
 out $t0, $zero, $imm, 14            # read the given sector to memory - diskcmd = 1
-out $t0, $zero, $imm, 1             # enable irqstatus0
 sw $s1, $zero, $imm, 256            # store result of sector 1 at 0x100
 sw $s2, $zero, $imm, 257            # store result of sector 2 at 0x101
 bge $imm, $s1, $s2, STORE           # if $v0 > $v1, jump store

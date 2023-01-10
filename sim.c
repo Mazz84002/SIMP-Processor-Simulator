@@ -162,7 +162,7 @@ void write_trace(unsigned machine_code, FILE* trace, int pc){ // writes the inst
 // ------------------------------------ OPERATIONS -------------------------------------------------
 
 void monitor_update(int MONITOR[], struct instruction inst);
-void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2);
+void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, FILE* hwregtrace);
 void write_leds(struct instruction inst, FILE* leds);
 void write_display7seg(struct instruction inst, FILE* display7seg);
 void write_hwregtrace(struct instruction inst, FILE* hwregtrace);
@@ -306,7 +306,7 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
         printf("DESTINATION - %s(%d) and value is %d\n", REGNAMES[inst.rd], inst.rd, IOREG[REG[inst.rs]+REG[inst.rt]]);
         REG[inst.rd] = (int)IOREG[REG[inst.rs]+REG[inst.rt]];
         monitor_update(MONITOR, inst);
-        disk_update(DISK, MEM, inst, irq2);
+        disk_update(DISK, MEM, inst, irq2, hwregtrace);
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
@@ -317,7 +317,7 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
         printf("DESTINATION - %s(%d) and value is %d\n", IOREGNAMES[REG[inst.rs] + REG[inst.rt]], REG[inst.rs] + REG[inst.rt], REG[inst.rd]);
         IOREG[REG[inst.rs] + REG[inst.rt]] = (unsigned)REG[inst.rd];
         monitor_update(MONITOR, inst);
-        disk_update(DISK, MEM, inst, irq2);
+        disk_update(DISK, MEM, inst, irq2, hwregtrace);
 
         pc_inc = 1;
         if (inst.inst_type == 1){
@@ -334,8 +334,8 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
 // ------------------------------------ INTERRUPTS ----------------------------------------
 
 void reset_clk();
-void increment_clk(struct instruction inst, int * irq2);
-void update_timer();
+void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace);
+void update_timer(FILE* hwregtrace);
 
 // irq0 is integrated in the timer
 
@@ -398,6 +398,9 @@ int check_irq(){ // gives one if we must go into an ISR
 
 int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trace, FILE* leds, FILE* display7seg, FILE* hwregtrace){ // handles the entire interrupt service routine and returns the pc after executing reti
     interrupt_off();
+    //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 0);
+    //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 0);
+    //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[5], 0);
     IOREG[7] = pc; // store previous pc
     pc = IOREG[6]; // get the pc from `irqhandler`
     struct instruction inst;
@@ -419,7 +422,7 @@ int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trac
 
         pc += perform_op(inst, pc, MEM, MONITOR, DISK, irq2, leds, display7seg, hwregtrace);
         i = pc;
-        increment_clk(inst, irq2);
+        increment_clk(inst, irq2, hwregtrace);
         printf("After Operations - \n");
         write_leds(inst, leds);
         write_display7seg(inst, display7seg);
@@ -433,15 +436,17 @@ int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trac
 
 // ---------------------------------------------- TIMER ---------------------------------------
 
-void update_timer(){ // updates the timer for a line in file (plus handeling the interrupts) - to be run after very clock update
+void update_timer(FILE* hwregtrace){ // updates the timer for a line in file (plus handeling the interrupts) - to be run after very clock update
     //IOREG[3] = 0; // resetting irqstatus0
     IOREG[12]++;
     if (IOREG[11] == 1){ // enable interrupt when timerenable = 1
-        IOREG[0] = 1;
+        IOREG[3] = 1;
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 1);
     }
 
     if (IOREG[12] == IOREG[13]){ // checking for the irqstatus0
         IOREG[3] = 1;
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 1);
         IOREG[12] = 0;
     }
 }
@@ -450,25 +455,24 @@ void update_timer(){ // updates the timer for a line in file (plus handeling the
 
 void reset_clk(){ // checks and resets clk to zero - to be used before every update of clk
     if (IOREG[8] == 0xffffffff){
-        IOREG[3] = 1;
         IOREG[8] = 0;
     }
 }
 
-void increment_clk(struct instruction inst, int * irq2){
+void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace){
     reset_clk();
     IOREG[8]++;
-    update_timer();
+    update_timer(hwregtrace);
     turn_on_irq2(irq2);
     if (inst.inst_type == 1){
         reset_clk();
         IOREG[8]++;
-        update_timer();
+        update_timer(hwregtrace);
         turn_on_irq2(irq2);
         if (inst.op == 16 || inst.op == 17){
             reset_clk();
             IOREG[8]++;
-            update_timer();
+            update_timer(hwregtrace);
             turn_on_irq2(irq2);
         }
     }
@@ -495,7 +499,7 @@ void write_hwregtrace(struct instruction inst, FILE* hwregtrace){
 }
 // ------------------------------------------- DISK --------------------------------------------
 
-void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
+void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, FILE* hwregtrace){
     int destination = REG[inst.rs]+REG[inst.rt];
     // disksector, diskbuffer, diskstatus are simple IO instructions already running using existing commands
     // disk_update will be run when we have an `out` instruction with diskcmd, which will tell us to read/write from the disk
@@ -513,11 +517,12 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
         print_memory_part(MEM, buffer, buffer+128);
         // incrementing the clock
         for (int i = 0; i<1024; i++){
-            increment_clk(inst, irq2);
+            increment_clk(inst, irq2, hwregtrace);
         }
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 1);
     }
     if (IOREG[14] == 2){ // write sector
         printf("WE ARE IN DISK WRITING\n");
@@ -529,11 +534,12 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2){
         }
         // incrementing the clock
         for (int i = 0; i<1024; i++){
-            increment_clk(inst, irq2);
+            increment_clk(inst, irq2, hwregtrace);
         }
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 1);
     }
 }
 
@@ -591,7 +597,7 @@ void simulator(int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trace
 
         pc += perform_op(inst, pc, MEM, MONITOR, DISK, irq2, leds, display7seg, hwregtrace);
 
-        increment_clk(inst, irq2);
+        increment_clk(inst, irq2, hwregtrace);
         printf("\n");
         printf("After Operations - \n");
         write_leds(inst, leds);
