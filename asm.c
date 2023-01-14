@@ -202,6 +202,9 @@ int reg_mask(int hex, char*token, int num){ // creates a bitmask for the registe
 // ------------------------------------- LABELS --------------------------------------
 
 int has_label(char *token){ // returns 1 if we have a label and 0 otherwise
+    if (strstr(token, "0x")){
+        return 0;
+    }
     int i = 0;
     while ((token[i] != '\0') && (token[i] != '#')){
         if ((token[i] >= 'a' && token[i] <= 'z') || (token[i] >= 'A' && token[i] <= 'Z'))
@@ -272,7 +275,11 @@ struct encoded_instruction encode_inst(struct instruction inst, struct encoded_i
     if (has_label(inst.imm)){
         enc_inst.imm = label_loc(lroot, inst.imm);
     }else{
-        enc_inst.imm = c2i(inst.imm);
+        if (strstr(inst.imm, "x")){ // hex
+                enc_inst.imm = h2d(inst.imm);
+            }else{
+                enc_inst.imm = c2i(inst.imm);
+            }
     }
     return enc_inst;
 }
@@ -418,7 +425,7 @@ void print_to_memin(int MEM[], FILE* memin){ // write to memin from MEM[] at the
 int main(){
     FILE* asmfile, *memin;
     char path[500];
-    asmfile = open_file("Inputs/disktest.asm", "r");
+    asmfile = open_file("Inputs/trial.asm", "r");
     memin = open_file("Outputs/memin.txt", "w");
     int pc = 0;
     int label_counter = 0;
