@@ -1,2 +1,2 @@
-add $t0, $zero, $imm, 1
-add $t1, $zero, $imm, 145
+add $t0, $zero, $imm, 0x1
+add $t1, $zero, $imm, 0xA
