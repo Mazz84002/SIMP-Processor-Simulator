@@ -43,7 +43,9 @@ char *remove_white_spaces(char *str){
 }
 // converts 5 byte hexadecimal to integer with sign extension
 int h2d(char line[]){
-    if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || line[0] == 'E'  | line[0] == 'F'){
+    if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || 
+        line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || 
+        line[0] == 'E'  | line[0] == 'F'){
         return (0xFFF00000 + strtol(line, (char **)NULL, 16));
     }
 
@@ -89,31 +91,20 @@ int label_loc(struct label* label, char *label_name){
 // prints a BST
 void print2DUtil(struct label* root, int space)
 {
-    // Base case
     if (root == NULL)
         return;
-
-    // Increase distance between levels
     space += 5;
-
-    // Process right child first
     print2DUtil(root->right, space);
-
-    // Print current node after space
-    // count
     printf("\n");
     for (int i = 5; i < space; i++)
         printf(" ");
     printf("%s->%d\n", root->label_name, root->label_loc);
-
-    // Process left child
     print2DUtil(root->left, space);
 }
 
 // Wrapper over print2DUtil()
 void print2D(struct label* root)
 {
-    // Pass initial space count as 0
     print2DUtil(root, 0);
 }
 
@@ -138,11 +129,10 @@ struct instruction{
     char* imm;
 };
 
-int has_label(char *token);
-int c2i(char *str);
+int has_label(char *token); // a function to check if a line has a label defined later
+int c2i(char *str); // fucntion to convert charater at imm value to integer if it is a number
 
-// Extract all the op, regs and imm from instruction
-struct instruction inst_fetch(char line[], struct instruction inst){
+struct instruction inst_fetch(char line[], struct instruction inst){ // Extract all the op, regs and imm from instruction
     strcmp(line, remove_white_spaces(line));
     char* token = NULL;
     token = strtok(line, "$");
@@ -264,7 +254,7 @@ int has_word(char line[]){ // checks if a line has .word
 }
 
 // --------------------------- ENCODED INSTRUCTION ------------------------------
-
+// holds the conoded instruction, where each part is converted to the corresponsing integer
 struct encoded_instruction{
     int op;
     int rd;
@@ -287,7 +277,7 @@ struct encoded_instruction encode_inst(struct instruction inst, struct encoded_i
     return enc_inst;
 }
 
-int is_itype(struct encoded_instruction enc_inst){ // returns 1 for i_type inst
+int is_itype(struct encoded_instruction enc_inst){ // returns 1 for i_type inst, 0 else
     return ( (enc_inst.rt==1)||(enc_inst.rs==1)||(enc_inst.rd==1) );
 }
 
@@ -317,7 +307,7 @@ void assembler(int MEM[], int pc, int label_counter, FILE* asmfile, FILE* memin)
     struct encoded_instruction enc_inst;
     int increment_label = 0;
     static struct label* lroot = NULL;
-    // ======================= FIRST PASS =======================
+    // ---------------------- FIRST PASS ----------------------
     while (fgets(line, MAX_LINE_ASM, asmfile)){
         strcmp(line, remove_white_spaces(line));
         if (strstr(line, ".word") == NULL){
@@ -343,7 +333,7 @@ void assembler(int MEM[], int pc, int label_counter, FILE* asmfile, FILE* memin)
     int memory_val = 0;
     char* mem_loc= NULL;
     char* mem_value = NULL;
-    // ======================= SECOND PASS =======================
+    // ---------------------- SECOND PASS ----------------------
     while (fgets(line, MAX_LINE_ASM, asmfile)){
         printf("-----------------------------------\n");
         if (strstr(line, ".word") != NULL){
@@ -428,7 +418,7 @@ void print_to_memin(int MEM[], FILE* memin){ // write to memin from MEM[] at the
 int main(){
     FILE* asmfile, *memin;
     char path[500];
-    asmfile = open_file("Inputs/square.asm", "r");
+    asmfile = open_file("Inputs/disktest.asm", "r");
     memin = open_file("Outputs/memin.txt", "w");
     int pc = 0;
     int label_counter = 0;

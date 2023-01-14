@@ -49,7 +49,7 @@ void print_IOREG(){
     printf("\n");
 }
 
-// ---------------------------------- OPERATIONS -----------------------------------------
+// ---------------------------------- Instructions -----------------------------------------
 struct instruction{
     unsigned rs;
     unsigned rt;
@@ -103,7 +103,7 @@ FILE* open_file(char name[], char mode[]){ // loads a file
     return f;
 }
 
-void create_temp_memory(FILE* memin, int MEM[]){
+void create_temp_memory(FILE* memin, int MEM[]){ // create a MEM[] array to be modified during the execution
     fseek(memin, 0, SEEK_SET);
     char line[LINE_LENGHT];
     int i = 0;
@@ -129,7 +129,7 @@ void print_memory_part(int MEM[], int start, int end){
     printf("\n");
 }
 
-void create_temp_diskout(FILE* diskin, int DISK[][128]){
+void create_temp_diskout(FILE* diskin, int DISK[][128]){ // creates a matrix of diskin to be modified during execution
     fseek(diskin, 0, SEEK_SET);
     char line[LINE_LENGHT];
     int i = 0;
@@ -218,15 +218,15 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
             pc_inc = 2;
         }
     }
-    else if (inst.op == 7){ // sra (CHANGE TO ARITHMETIC SHIFT)
-        REG[inst.rd] = (int)(REG[inst.rs] >> REG[inst.rt]) + (int)pow(2, 20)*(REG[inst.rs]%10);
+    else if (inst.op == 7){ // sra
+        REG[inst.rd] = REG[inst.rs] >> REG[inst.rt];
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
         }
     }
     else if (inst.op == 8){ // srl
-        REG[inst.rd] = REG[inst.rs] >> REG[inst.rt];
+        REG[inst.rd] = (unsigned int) REG[inst.rs] >> REG[inst.rt];
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
@@ -318,7 +318,6 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
         IOREG[REG[inst.rs] + REG[inst.rt]] = (unsigned)REG[inst.rd];
         monitor_update(MONITOR, inst);
         disk_update(DISK, MEM, inst, irq2, hwregtrace);
-
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
@@ -346,7 +345,7 @@ int h2ud(char line[]){ // converts hexadecimal to unsigned integer
     return (int)strtol(line, (char **)NULL, 16);
 }
 
-int* store_irq2_in_array(FILE* irq2in){
+int* store_irq2_in_array(FILE* irq2in){ // what the fucntion_name says
     char line[LINE_LENGHT];
     int count = 0;
     while (fgets(line, LINE_LENGHT, irq2in)){
@@ -384,20 +383,11 @@ void interrupt_off(){
 }
 
 int check_irq(){ // gives one if we must go into an ISR
-    if ((IOREG[0] && IOREG[3])){
-        printf("irq0 on\n");
-    }
-    if ((IOREG[1] && IOREG[4])){
-        printf("irq0 on\n");
-    }
-    if ((IOREG[2] && IOREG[5])){
-        printf("irq0 on\n");
-    }
     return((IOREG[0] && IOREG[3]) || (IOREG[1] && IOREG[4]) || (IOREG[2] && IOREG[5]));
 }
 
 int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trace, FILE* leds, FILE* display7seg, FILE* hwregtrace){ // handles the entire interrupt service routine and returns the pc after executing reti
-    interrupt_off();
+    interrupt_off(); // turn off the interrupts
     //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 0);
     //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 0);
     //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[5], 0);
@@ -441,12 +431,10 @@ void update_timer(FILE* hwregtrace){ // updates the timer for a line in file (pl
     IOREG[12]++;
     if (IOREG[11] == 1){ // enable interrupt when timerenable = 1
         IOREG[3] = 1;
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 1);
     }
 
     if (IOREG[12] == IOREG[13]){ // checking for the irqstatus0
         IOREG[3] = 1;
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 1);
         IOREG[12] = 0;
     }
 }
@@ -491,10 +479,10 @@ void write_display7seg(struct instruction inst, FILE* display7seg){
 
 void write_hwregtrace(struct instruction inst, FILE* hwregtrace){
     if (inst.op == 20){
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8], IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
     }
     if (inst.op == 19){
-        fprintf(hwregtrace, "%d READ %s %08X\n", IOREG[8]-1, IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
+        fprintf(hwregtrace, "%d READ %s %08X\n", IOREG[8], IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
     }
 }
 // ------------------------------------------- DISK --------------------------------------------
@@ -522,7 +510,7 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, 
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 1);
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8], IOREGNAMES[4], 1);
     }
     if (IOREG[14] == 2){ // write sector
         printf("WE ARE IN DISK WRITING\n");
@@ -631,7 +619,7 @@ int last_non_zero_element(int A[], int size){ // takes in an array and returns t
 }
 
 
-void generate_memout(int MEM[], FILE* memout){
+void generate_memout(int MEM[], FILE* memout){ // genarates memout from MEM[]
     int end = last_non_zero_element(MEM, 4096);
     for (int i = 0; i <= end; ++i) {
         fprintf(memout, "%05X\n", MEM[i] & 0x000FFFFF);
@@ -646,14 +634,14 @@ void print_arr(int irq2[]){
     printf("\n");
 }
 
-void generate_monitor(int MONITOR[], FILE* monitor){
+void generate_monitor(int MONITOR[], FILE* monitor){ // generates monitor from MONITOR[]
     for (int i = 0; i < 256*256; i++){
         fprintf(monitor, "%02X\n", MONITOR[i]);
     }
 
 }
 
-void generate_diskout(int DISK[][128], FILE* diskout){
+void generate_diskout(int DISK[][128], FILE* diskout){ // generates diskout from DISK[]
     for (int i = 0; i < 128; ++i) {
         for (int j = 0; j < 128; ++j) {
             fprintf(diskout, "%05X\n", DISK[i][j]);
@@ -661,7 +649,7 @@ void generate_diskout(int DISK[][128], FILE* diskout){
     }
 }
 
-void generate_regout(FILE* regout){
+void generate_regout(FILE* regout){ // generates regout
     for (int i = 2; i < 16; ++i) {
         fprintf(regout, "%05X\n", REG[i]);
     }

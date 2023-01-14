@@ -1,5 +1,5 @@
 .word 0x100 0                       # sector1 at 256 in memin
-.word 0x101 5                       # sector2 at 257 in memin
+.word 0x101 1                       # sector2 at 257 in memin
 add $t0, $zero, $imm, 1             # $t0 = 1
 out $t0, $zero, $imm, 1             # enable irq1
 add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
@@ -15,7 +15,7 @@ bgt $imm, $zero, $a0, DIRECTHAULT   # go to hault if sector1<0
 bgt $imm, $a0, $t0, DIRECTHAULT     # go to hault if sector1>128
 add $a1, $zero, $imm, 2048          # decide buffer for sector1 in $a1
 out $a1, $zero, $imm, 16            # write the disk sector to IOREG
-add $a3, $zero, $imm, 7             # $a3 - max value for read
+add $a3, $zero, $imm, 8             # $a3 - max value for read
 add $t0, $zero, $imm, 1             # $t0 = 1
 add $v0, $zero, $zero, 0            # initialise sum of sector1 to be 0
 add $t1, $zero, $zero, 0            # $t1 = 0 (functions as an index)
@@ -31,7 +31,7 @@ add $a1, $zero, $imm, 2178          # decide buffer for sector2 in $a1
 out $a1, $zero, $imm, 16            # write the disk sector to IOREG
 add $t0, $zero, $imm, 1             # $t0 = 1
 add $t1, $zero, $zero, 0            # $t1 = 0 (functions as an index)
-add $a3, $zero, $imm, 7             # $a3 - max value for read
+add $a3, $zero, $imm, 8             # $a3 - max value for read
 add $v1, $zero, $zero, 0            # initialise sum of sector2 to be 0
 out $t0, $zero, $imm, 14            # read the given sector to memory - diskcmd = 1
 sw $s1, $zero, $imm, 256            # store result of sector 1 at 0x100
@@ -44,7 +44,7 @@ lw $s2, $sp, $imm, 2                # restore $s2
 add $sp, $sp, $imm, 3               # clear stack
 halt $zero, $zero, $zero, 0
 SUM_FIRST_SECTOR:
-bgt $imm, $t1, $a3, MEDIATOR1        # when you read the first eight entries, go to mediator
+bge $imm, $t1, $a3, MEDIATOR1        # when you read the first eight entries, go to mediator
 add $a1, $t1, $imm, 2048             # $a1 - absolute address of index i (=$t1) in MEM
 lw $t0, $a1, $imm, 0                 # $t0 has the ith element
 add $t1, $t1, $imm, 1                # i = i + 1
@@ -52,9 +52,10 @@ add $v0, $v0, $t0, 0                 # $v0 = $v0 + $t0
 jal $ra, $imm, $zero, SUM_FIRST_SECTOR          # jump back to SUM2
 MEDIATOR1:
 add $s1, $v0, $zero, 0               # store sector1 sum in $s1
+add $v0, $zero, $zero, 0             # make $v0 = 0 for next round
 reti $zero, $zero, $zero, 0          # return instruction
 SUM_SEC_SECTOR:
-bgt $imm, $t1, $a3, MEDIATOR2        # when you read the first eight entries, go to mediator
+bge $imm, $t1, $a3, MEDIATOR2        # when you read the first eight entries, go to mediator
 add $a1, $t1, $imm, 2178             # $a1 - absolute address of index i (=$t1) in MEM
 lw $t0, $a1, $imm, 0                 # $t0 has the ith element
 add $t1, $t1, $imm, 1                # i = i + 1
