@@ -449,15 +449,15 @@ void reset_clk(){ // checks and resets clk to zero - to be used before every upd
 
 void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace){
     reset_clk();
-    IOREG[8]++;
+    IOREG[8]++; // r-type
     update_timer(hwregtrace);
     turn_on_irq2(irq2);
     if (inst.inst_type == 1){
         reset_clk();
-        IOREG[8]++;
+        IOREG[8]++; // i-type
         update_timer(hwregtrace);
         turn_on_irq2(irq2);
-        if (inst.op == 16 || inst.op == 17){
+        if (inst.op == 16 || inst.op == 17){ // extra clock for lw/sw
             reset_clk();
             IOREG[8]++;
             update_timer(hwregtrace);
@@ -470,7 +470,7 @@ void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace){
 
 // no need for extra function
 void write_display7seg(struct instruction inst, FILE* display7seg){
-    if (inst.op == 20 && REG[inst.rs] + REG[inst.rt] == 10){
+    if (inst.op == 20 && REG[inst.rs] + REG[inst.rt] == 10){ // if you access display7deg part with out instruction
         fprintf(display7seg, "%d %08X\n", IOREG[8]-1, IOREG[10]);
     }
 }
