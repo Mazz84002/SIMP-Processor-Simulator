@@ -15,10 +15,10 @@ def visualize(monitor_text):
     img = np.char.replace(img, 'ff', '255').astype(int)
 
     plt.imshow(img)
-    plt.show()
     plt.savefig('square.png')
 
 if __name__ == "__main__":
+    # python display_monitor.py -f monitor.txt
     parser = argparse.ArgumentParser()
     parser.add_argument("--monitor_file", "-f")
 
