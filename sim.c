@@ -403,7 +403,7 @@ void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace){
 // no need for extra function
 void write_display7seg(struct instruction inst, FILE* display7seg){
     if (inst.op == 20 && REG[inst.rs] + REG[inst.rt] == 10){ // if you access display7deg part with out instruction
-        fprintf(display7seg, "%d %08X\n", IOREG[8]-1, IOREG[10]);
+        fprintf(display7seg, "%d %08X\n", IOREG[8], IOREG[10]);
     }
 }
 
@@ -453,7 +453,7 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, 
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 1);
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8], IOREGNAMES[4], 1);
     }
 }
 
@@ -463,7 +463,7 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, 
 // No need for seperate function
 void write_leds(struct instruction inst, FILE* leds){
     if (inst.op == 20 && REG[inst.rs] + REG[inst.rt] == 9){
-        fprintf(leds, "%d %08X\n", IOREG[8]-1, IOREG[9]);
+        fprintf(leds, "%d %08X\n", IOREG[8], IOREG[9]);
     }
 }
 
