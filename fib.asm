@@ -27,6 +27,7 @@ add $s0, $zero, $s1, 0              # $s0 = $s1
 add $s1, $zero, $zero, 0
 add $s1, $zero, $s2, 0              # $s1 = $s2
 add $a0, $a0, $imm, 1               # increment the mem loc
+out $s2, $zero, $imm, 10			# write $s2 to display
 jal $ra, $imm, $zero, fib           # jump back to fib
 overflow:
 lw $s0, $sp, $imm, 0                # restore $s0

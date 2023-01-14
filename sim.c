@@ -26,30 +26,8 @@ const char *IOREGNAMES[23] = { "irq0enable", "irq1enable", "irq2enable", "irq0st
                                "diskcmd", "disksector", "diskbuffer", "diskstatus", "reserved18", "reserved19",
                                "monitoraddr", "monitordata", "monitorcmd"
 };
-void print_REG(){
-    printf("REG DECIMAL - ");
-    for (int i = 0; i < 16; ++i) {
-        printf("(%s,%d),", REGNAMES[i], REG[i]);
-    }
-    printf("\n");
-    printf("REG HEX - ");
-    for (int i = 0; i < 16; ++i) {
-        printf("(%s,%X)", REGNAMES[i], REG[i]);
-    }
-    printf("\n");
-}
-void print_IOREG(){
-    printf("IOREG - ");
-    for (int i = 0; i < 23; ++i) {
-        if (i == 8 || i == 11 || i == 14 || i == 18 || i == 20){
-            printf(" | ");
-        }
-        printf("(%s,%X),", IOREGNAMES[i], IOREG[i]);
-    }
-    printf("\n");
-}
 
-// ---------------------------------- OPERATIONS -----------------------------------------
+// ---------------------------------- Instructions -----------------------------------------
 struct instruction{
     unsigned rs;
     unsigned rt;
@@ -103,7 +81,7 @@ FILE* open_file(char name[], char mode[]){ // loads a file
     return f;
 }
 
-void create_temp_memory(FILE* memin, int MEM[]){
+void create_temp_memory(FILE* memin, int MEM[]){ // create a MEM[] array to be modified during the execution
     fseek(memin, 0, SEEK_SET);
     char line[LINE_LENGHT];
     int i = 0;
@@ -113,38 +91,13 @@ void create_temp_memory(FILE* memin, int MEM[]){
     }
 }
 
-void print_memory(int MEM[]){
-    for (int i = 0; i < 4096; ++i) {
-        if (MEM[i] != 0)
-            printf("(%d,%05X) ", i, MEM[i]);
-    }
-    printf("\n");
-}
-
-void print_memory_part(int MEM[], int start, int end){
-    for (int i = start; i < end; ++i) {
-        if (MEM[i] != 0)
-            printf("(%d,%05X) ", i, MEM[i]);
-    }
-    printf("\n");
-}
-
-void create_temp_diskout(FILE* diskin, int DISK[][128]){
+void create_temp_diskout(FILE* diskin, int DISK[][128]){ // creates a matrix of diskin to be modified during execution
     fseek(diskin, 0, SEEK_SET);
     char line[LINE_LENGHT];
     int i = 0;
     while (fgets(line, LINE_LENGHT, diskin)){
         DISK[i/128][i%128] = h2d(line);
         i++;
-    }
-}
-
-void print_disk(int DISK[][128]){
-    for (int i = 0; i < 128; ++i) {
-        for (int j = 0; j < 128; ++j) {
-            printf("%05X ", DISK[i][j]);
-        }
-        printf("\n");
     }
 }
 
@@ -218,15 +171,15 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
             pc_inc = 2;
         }
     }
-    else if (inst.op == 7){ // sra (CHANGE TO ARITHMETIC SHIFT)
-        REG[inst.rd] = (int)(REG[inst.rs] >> REG[inst.rt]) + (int)pow(2, 20)*(REG[inst.rs]%10);
+    else if (inst.op == 7){ // sra
+        REG[inst.rd] = REG[inst.rs] >> REG[inst.rt];
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
         }
     }
     else if (inst.op == 8){ // srl
-        REG[inst.rd] = REG[inst.rs] >> REG[inst.rt];
+        REG[inst.rd] = (unsigned int) REG[inst.rs] >> REG[inst.rt];
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
@@ -277,7 +230,6 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
     else if (inst.op == 15){ // jal
         REG[inst.rd] = pc + 2;
         pc_inc = REG[inst.rs] - pc;
-        //printf("increment for jump = %d\n", pc_inc);
     }
     else if (inst.op == 16){ // lw
         REG[inst.rd] = MEM[REG[inst.rs] + REG[inst.rt]];
@@ -287,7 +239,6 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
         }
     }
     else if (inst.op == 17){ // sw
-        //printf("Storing at %d the value %d\n", REG[inst.rs] + REG[inst.rt], REG[inst.rd]);
         MEM[REG[inst.rs] + REG[inst.rt]] = REG[inst.rd];
         pc_inc = 1;
         if (inst.inst_type == 1){
@@ -302,8 +253,6 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
         }
     }
     else if (inst.op == 19){ // in - to read from IOREG
-        //printf("->IN (read) REQUEST\n");
-        //printf("DESTINATION - %s(%d) and value is %d\n", REGNAMES[inst.rd], inst.rd, IOREG[REG[inst.rs]+REG[inst.rt]]);
         REG[inst.rd] = (int)IOREG[REG[inst.rs]+REG[inst.rt]];
         monitor_update(MONITOR, inst);
         disk_update(DISK, MEM, inst, irq2, hwregtrace);
@@ -313,12 +262,9 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
         }
     }
     else if (inst.op == 20){ // out - to write IOREG
-        //printf("->OUT (write) REQUEST\n");
-        //printf("DESTINATION - %s(%d) and value is %d\n", IOREGNAMES[REG[inst.rs] + REG[inst.rt]], REG[inst.rs] + REG[inst.rt], REG[inst.rd]);
         IOREG[REG[inst.rs] + REG[inst.rt]] = (unsigned)REG[inst.rd];
         monitor_update(MONITOR, inst);
         disk_update(DISK, MEM, inst, irq2, hwregtrace);
-
         pc_inc = 1;
         if (inst.inst_type == 1){
             pc_inc = 2;
@@ -326,7 +272,6 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
     } else{ // halt - handled in void simulator()
         pc_inc = 1;
     }
-    //printf("pc-increment = %d\n", pc_inc);
     return pc_inc;
 }
 
@@ -346,7 +291,7 @@ int h2ud(char line[]){ // converts hexadecimal to unsigned integer
     return (int)strtol(line, (char **)NULL, 16);
 }
 
-int* store_irq2_in_array(FILE* irq2in){
+int* store_irq2_in_array(FILE* irq2in){ // what the fucntion_name says
     char line[LINE_LENGHT];
     int count = 0;
     while (fgets(line, LINE_LENGHT, irq2in)){
@@ -370,7 +315,6 @@ void turn_on_irq2(int *irq2){ // turns on interrupt bit if current clk belongs t
     int i = 0;
     while (irq2[i] != -1){
         if (irq2[i] == IOREG[8]){
-            //printf("We found irqstatus2 at %d\n", IOREG[8]);
             IOREG[5] = 1; // turn on the status bit
         }
         i++;
@@ -388,7 +332,7 @@ int check_irq(){ // gives one if we must go into an ISR
 }
 
 int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trace, FILE* leds, FILE* display7seg, FILE* hwregtrace){ // handles the entire interrupt service routine and returns the pc after executing reti
-    interrupt_off();
+    interrupt_off(); // turn off the interrupts
     //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 0);
     //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 0);
     //fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[5], 0);
@@ -398,28 +342,15 @@ int ISR(int pc, int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trac
     int i = pc;
     inst.op = 0;
     while (inst.op != 18){ // keep iterating till you reach reti
-        //printf("-----------------------------------------------------------------------------\n");
-        //printf("%05X\n", MEM[i]);
-        //printf("PC - %d\n", pc);
-        //printf("CLOCK - %d/%X\n", IOREG[8], IOREG[8]);
         unsigned machine_code = MEM[i];
         inst = decode(machine_code, pc, i, MEM);
-        //printf("DECODED: op=%s(%d), rd=%s(%d), rs=%s(%d), rt=%s(%d), type=%d, imm=%d\n",
-               //OPCODES[inst.op], inst.op, REGNAMES[inst.rd], inst.rd, REGNAMES[inst.rs], inst.rs, REGNAMES[inst.rt], inst.rt, inst.inst_type, inst.imm);
-       // printf("Before Operations - \n");
-        //print_IOREG();
-        //print_REG();
         write_trace(machine_code, trace, pc);
-
         pc += perform_op(inst, pc, MEM, MONITOR, DISK, irq2, leds, display7seg, hwregtrace);
         i = pc;
         increment_clk(inst, irq2, hwregtrace);
-        //printf("After Operations - \n");
         write_leds(inst, leds);
         write_display7seg(inst, display7seg);
         write_hwregtrace(inst, hwregtrace);
-        //print_IOREG();
-        //print_REG();
     }
     return IOREG[7];
 }
@@ -432,12 +363,10 @@ void update_timer(FILE* hwregtrace){ // updates the timer for a line in file (pl
     IOREG[12]++;
     if (IOREG[11] == 1){ // enable interrupt when timerenable = 1
         IOREG[3] = 1;
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 1);
     }
 
     if (IOREG[12] == IOREG[13]){ // checking for the irqstatus0
         IOREG[3] = 1;
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[3], 1);
         IOREG[12] = 0;
     }
 }
@@ -452,15 +381,15 @@ void reset_clk(){ // checks and resets clk to zero - to be used before every upd
 
 void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace){
     reset_clk();
-    IOREG[8]++;
+    IOREG[8]++; // r-type
     update_timer(hwregtrace);
     turn_on_irq2(irq2);
     if (inst.inst_type == 1){
         reset_clk();
-        IOREG[8]++;
+        IOREG[8]++; // i-type
         update_timer(hwregtrace);
         turn_on_irq2(irq2);
-        if (inst.op == 16 || inst.op == 17){
+        if (inst.op == 16 || inst.op == 17){ // extra clock for lw/sw
             reset_clk();
             IOREG[8]++;
             update_timer(hwregtrace);
@@ -473,7 +402,7 @@ void increment_clk(struct instruction inst, int * irq2, FILE* hwregtrace){
 
 // no need for extra function
 void write_display7seg(struct instruction inst, FILE* display7seg){
-    if (inst.op == 20 && REG[inst.rs] + REG[inst.rt] == 10){
+    if (inst.op == 20 && REG[inst.rs] + REG[inst.rt] == 10){ // if you access display7deg part with out instruction
         fprintf(display7seg, "%d %08X\n", IOREG[8]-1, IOREG[10]);
     }
 }
@@ -482,10 +411,10 @@ void write_display7seg(struct instruction inst, FILE* display7seg){
 
 void write_hwregtrace(struct instruction inst, FILE* hwregtrace){
     if (inst.op == 20){
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8], IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
     }
     if (inst.op == 19){
-        fprintf(hwregtrace, "%d READ %s %08X\n", IOREG[8]-1, IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
+        fprintf(hwregtrace, "%d READ %s %08X\n", IOREG[8], IOREGNAMES[REG[inst.rs] + REG[inst.rt]], IOREG[REG[inst.rs] + REG[inst.rt]]);
     }
 }
 // ------------------------------------------- DISK --------------------------------------------
@@ -495,17 +424,12 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, 
     // disksector, diskbuffer, diskstatus are simple IO instructions already running using existing commands
     // disk_update will be run when we have an `out` instruction with diskcmd, which will tell us to read/write from the disk
     if (IOREG[14] == 1){ // read sector
-        //printf("WE ARE IN DISK READING\n");
         // we need to read sector `disksector` into MEM[`diskbuffer`]
         int buffer = IOREG[16];
-        //printf("WRITTING FROM DISK TO MEMORY");
-        //printf("THE LOCATION IN THE MEMORY IS %d\n", buffer);
-        //printf("THE SECTOR NUMBER IS %d\n", IOREG[15]);
         int sector_num = IOREG[15];
         for (int j = 0; j<128; j++){
             MEM[j+buffer] = DISK[sector_num][j];
         }
-        //_memory_part(MEM, buffer, buffer+128);
         // incrementing the clock
         for (int i = 0; i<1024; i++){
             increment_clk(inst, irq2, hwregtrace);
@@ -513,10 +437,9 @@ void disk_update(int DISK[][128], int MEM[], struct instruction inst, int*irq2, 
         // After 1024 clock cycles the hardware registers “diskstatus” and “diskcmd” will be set to 0
         IOREG[14] = 0; IOREG[17] = 0;
         IOREG[4] = 1; //irq1status = 1
-        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8]-1, IOREGNAMES[4], 1);
+        fprintf(hwregtrace, "%d WRITE %s %08X\n", IOREG[8], IOREGNAMES[4], 1);
     }
     if (IOREG[14] == 2){ // write sector
-        //printf("WE ARE IN DISK WRITING\n");
         // we need to write MEM[`disksector`] into DISK[`disksector`][0->127]
         int buffer = IOREG[16];
         int sector_num = IOREG[15];
@@ -556,7 +479,6 @@ void monitor_update(int MONITOR[], struct instruction inst){
     if (inst.op == 20){ // out - write
         if (destination == 22){ // monitorcmd
             IOREG[destination] = 1;
-            //f("WRITTING TO MONITOR - address is %d and value is %d\n", IOREG[20], IOREG[21]);
             MONITOR[IOREG[20]] = IOREG[21];
         }
     }
@@ -573,35 +495,18 @@ void simulator(int MEM[], int MONITOR[], int DISK[][128], int* irq2, FILE* trace
     int j = 0;
     inst.op = 0;
     while (inst.op != 21){
-        //printf("-----------------------------------------------------------------------------------------------------------------------------------------------\n");
-        //printf("%05X\n", MEM[i]);
-        //printf("PC - %d/%03X\n", pc, pc);
-        //printf("CLOCK - %d/%X\n", IOREG[8], IOREG[8]);
         unsigned machine_code = MEM[i];
         inst = decode(machine_code, pc, i, MEM);
-        //printf("DECODED: op=%s(%d), rd=%s(%d), rs=%s(%d), rt=%s(%d), type=%d, imm=%d\n",
-               //OPCODES[inst.op], inst.op, REGNAMES[inst.rd], inst.rd, REGNAMES[inst.rs], inst.rs, REGNAMES[inst.rt], inst.rt, inst.inst_type, inst.imm);
-        //printf("Before Operations - \n");
-        //print_IOREG();
-        //print_REG();
         write_trace(machine_code, trace, pc);
-
         pc += perform_op(inst, pc, MEM, MONITOR, DISK, irq2, leds, display7seg, hwregtrace);
-
         increment_clk(inst, irq2, hwregtrace);
-        //printf("\n");
-        //printf("After Operations - \n");
         write_leds(inst, leds);
         write_display7seg(inst, display7seg);
         write_hwregtrace(inst, hwregtrace);
-        //print_IOREG();
-        //print_REG();
 
         // checking ISR - ISR won't work for CLK 0 (but you need >1 clk to set irqenable so it doesn't matter)
         while (check_irq()){ // if we have an interrupt
-            //printf("----------------------------------------------------- RUNNING ISR -----------------------------------------------------\n");
             pc = ISR(pc, MEM, MONITOR, DISK, irq2, trace, leds, display7seg, hwregtrace);
-            //printf("----------------------------------------------------- FINISHED ISR ----------------------------------------------------\n");
         }
 
 
@@ -622,29 +527,21 @@ int last_non_zero_element(int A[], int size){ // takes in an array and returns t
 }
 
 
-void generate_memout(int MEM[], FILE* memout){
+void generate_memout(int MEM[], FILE* memout){ // genarates memout from MEM[]
     int end = last_non_zero_element(MEM, 4096);
     for (int i = 0; i <= end; ++i) {
         fprintf(memout, "%05X\n", MEM[i] & 0x000FFFFF);
     }
 }
 
-void print_arr(int irq2[]){
-    int i = 0;
-    for (i = 0; i <= 9; i++){
-        printf("%d, ", irq2[i]);
-    }
-    printf("\n");
-}
-
-void generate_monitor(int MONITOR[], FILE* monitor){
+void generate_monitor(int MONITOR[], FILE* monitor){ // generates monitor from MONITOR[]
     for (int i = 0; i < 256*256; i++){
         fprintf(monitor, "%02X\n", MONITOR[i]);
     }
 
 }
 
-void generate_diskout(int DISK[][128], FILE* diskout){
+void generate_diskout(int DISK[][128], FILE* diskout){ // generates diskout from DISK[]
     for (int i = 0; i < 128; ++i) {
         for (int j = 0; j < 128; ++j) {
             fprintf(diskout, "%05X\n", DISK[i][j]);
@@ -652,45 +549,38 @@ void generate_diskout(int DISK[][128], FILE* diskout){
     }
 }
 
-void generate_regout(FILE* regout){
+void generate_regout(FILE* regout){ // generates regout
     for (int i = 2; i < 16; ++i) {
         fprintf(regout, "%05X\n", REG[i]);
     }
 }
 
-void print_monitor(int MONITOR[]){
-    for (int i = 0; i < 256; i++){
-        for (int j = 0; j < 256; j++){
-            printf("%d ", MONITOR[j+(i%256)]);
-        }
-        //printf("\n");
-    }
-    
-}
-
-int main(){
+int main(int argc, char *argv[]){
     IOREG[13] = 0xffffffff; // timermax - the only value in IOREG that is not initialised to 0
     FILE *diskin, *irq2in, *memin, *memout, *regout, *trace, *hwregtrace, *cycles, *leds, *display7seg, *diskout, *monitor;
-    memin = open_file("Outputs/memin.txt", "r");
-    irq2in = open_file("Inputs/irq2in.txt", "r");
-    diskin = open_file("Inputs/diskin.txt", "r");
+    //sim.exe memin.txt diskin.txt irq2in.txt memout.txt regout.txt trace.txt hwregtrace.txt cycles.txt leds.txt display7seg.txt diskout.txt monitor.txt
+    memin = open_file(argv[1], "r");
+    diskin = open_file(argv[2], "r");
+    irq2in = open_file(argv[3], "r");
+    memout = open_file(argv[4], "w");
+    regout = open_file(argv[5], "w");
+    trace = open_file(argv[6], "w");
+    hwregtrace = open_file(argv[7], "w");
+    cycles = open_file(argv[8], "w");
+    leds = open_file(argv[9], "w");
+    display7seg = open_file(argv[10], "w");
+    diskout = open_file(argv[11], "w");
+    monitor = open_file(argv[12], "w");
+
     int MEM[4096] = {0}; // initialise a temporary array that holds the memory
     int MONITOR[256*256] = {0};
     int DISK[128][128] = {0};
     int *irq2 = store_irq2_in_array(irq2in); //this array contains all the irq2
-    //print_arr(irq2);
 
     create_temp_memory(memin, MEM);
     create_temp_diskout(diskin, DISK);
 
-    trace = open_file("Outputs/trace.txt", "w");
-    cycles = open_file("Outputs/cycles.txt", "w");
-    leds = open_file("Outputs/leds.txt", "w");
-    hwregtrace = open_file("Outputs/hwregtrace.txt", "w");
-    monitor = open_file("Outputs/monitor.txt", "w");
-    diskout = open_file("Outputs/diskout.txt", "w");
-    regout = open_file("Outputs/regout.txt", "w");
-    display7seg = open_file("Outputs/display7seg.txt", "w");
+
 
     simulator(MEM, MONITOR, DISK, irq2, trace, cycles, leds, irq2in, display7seg, hwregtrace);
     //print_memory(MEM);
@@ -698,7 +588,6 @@ int main(){
     //print_monitor(MONITOR);
 
     // Generating output files
-    memout = open_file("Outputs/memout.txt", "w");
     generate_memout(MEM, memout);
     generate_monitor(MONITOR, monitor);
     generate_diskout(DISK, diskout);
