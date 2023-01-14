@@ -43,7 +43,9 @@ char *remove_white_spaces(char *str){
 }
 // converts 5 byte hexadecimal to integer with sign extension
 int h2d(char line[]){
-    if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || line[0] == 'E'  | line[0] == 'F'){
+    if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || 
+        line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || 
+        line[0] == 'E'  | line[0] == 'F'){
         return (0xFFF00000 + strtol(line, (char **)NULL, 16));
     }
 
@@ -86,36 +88,6 @@ int label_loc(struct label* label, char *label_name){
     else
         return label->label_loc;
 }
-// prints a BST
-void print2DUtil(struct label* root, int space)
-{
-    // Base case
-    if (root == NULL)
-        return;
-
-    // Increase distance between levels
-    space += 5;
-
-    // Process right child first
-    print2DUtil(root->right, space);
-
-    // Print current node after space
-    // count
-    printf("\n");
-    for (int i = 5; i < space; i++)
-        printf(" ");
-    printf("%s->%d\n", root->label_name, root->label_loc);
-
-    // Process left child
-    print2DUtil(root->left, space);
-}
-
-// Wrapper over print2DUtil()
-void print2D(struct label* root)
-{
-    // Pass initial space count as 0
-    print2DUtil(root, 0);
-}
 
 // free the memory from BST
 void free_tree(struct label* root){
@@ -138,11 +110,10 @@ struct instruction{
     char* imm;
 };
 
-int has_label(char *token);
-int c2i(char *str);
+int has_label(char *token); // a function to check if a line has a label defined later
+int c2i(char *str); // fucntion to convert charater at imm value to integer if it is a number
 
-// Extract all the op, regs and imm from instruction
-struct instruction inst_fetch(char line[], struct instruction inst){
+struct instruction inst_fetch(char line[], struct instruction inst){ // Extract all the op, regs and imm from instruction
     strcmp(line, remove_white_spaces(line));
     char* token = NULL;
     token = strtok(line, "$");
@@ -225,7 +196,6 @@ int enter_label_if_found(char line[], struct label* lroot, int pc){ // enters la
     if (strstr(line, ":") != NULL) {
         strcmp(line, strtok(line, ":"));
         lroot = insert_label(lroot, pc, line);
-        //print2D(lroot);
         return 1;
     }
     return 0;
@@ -264,7 +234,7 @@ int has_word(char line[]){ // checks if a line has .word
 }
 
 // --------------------------- ENCODED INSTRUCTION ------------------------------
-
+// holds the conoded instruction, where each part is converted to the corresponsing integer
 struct encoded_instruction{
     int op;
     int rd;
@@ -287,7 +257,7 @@ struct encoded_instruction encode_inst(struct instruction inst, struct encoded_i
     return enc_inst;
 }
 
-int is_itype(struct encoded_instruction enc_inst){ // returns 1 for i_type inst
+int is_itype(struct encoded_instruction enc_inst){ // returns 1 for i_type inst, 0 else
     return ( (enc_inst.rt==1)||(enc_inst.rs==1)||(enc_inst.rd==1) );
 }
 
@@ -317,21 +287,17 @@ void assembler(int MEM[], int pc, int label_counter, FILE* asmfile, FILE* memin)
     struct encoded_instruction enc_inst;
     int increment_label = 0;
     static struct label* lroot = NULL;
-    // ======================= FIRST PASS =======================
+    // ---------------------- FIRST PASS ----------------------
     while (fgets(line, MAX_LINE_ASM, asmfile)){
         strcmp(line, remove_white_spaces(line));
         if (strstr(line, ".word") == NULL){
             if (strstr(line, ":") != NULL) {
-                //f("-----------------------------------\n");
                 strcmp(line, strtok(line, ":"));
                 lroot = insert_label(lroot, pc, line);
-                //print2D(lroot);
                 label_counter++;
             }else{ // we did not have a label, then update pc
-                //printf("PC = %d\n", pc);
                 pc++;
                 inst = inst_fetch(line, inst);
-                //printf("op=%s, rd=%s, rs=%s, rt=%s, imm=%s\n", inst.op, inst.rd, inst.rs, inst.rt, inst.imm);
                 pc += (reg_num(inst.rd)==1 || reg_num(inst.rs)==1 || reg_num(inst.rt)==1);
             }
         }
@@ -343,47 +309,32 @@ void assembler(int MEM[], int pc, int label_counter, FILE* asmfile, FILE* memin)
     int memory_val = 0;
     char* mem_loc= NULL;
     char* mem_value = NULL;
-    // ======================= SECOND PASS =======================
+    // ---------------------- SECOND PASS ----------------------
     while (fgets(line, MAX_LINE_ASM, asmfile)){
-        //printf("-----------------------------------\n");
         if (strstr(line, ".word") != NULL){
-            //printf("FOUND A .WORD\n");
             token = strtok(line, " ");
             token = strtok(NULL, " ");
-            //printf("LOCATION = %s\n", token);
             if (strstr(token, "x")){ // hex
-                //printf("WRITTING TO LOCATION %d\n", h2d(token));
                 memory_loc = h2d(token);
             }else{
-                //printf("WRITTING TO LOCATION %d\n", c2i(token));
                 memory_loc = c2i(token);
             }
             token = strtok(NULL, " ");
-            //printf("VALUE = %s\n", token);
             if (strstr(token, "x")){ // hex
-                //printf("WRITTING TO FILE %05X\n", h2d(token));
                 memory_val = h2d(token);
             }else{
-                //printf("WRITTING TO FILE %05X\n", c2i(token));
                 memory_val = c2i(token);
             }
             MEM[memory_loc] = memory_val;
             continue;
         }
         strcmp(line, remove_white_spaces(line));
-        //printf("line counter = %d\n", line_counter);
-        //printf("%s\n", line);
         if (strstr(line, ":") != NULL){ // We have a label
-            //printf("SKIPING LABEL\n");
             pc++; // increase counter by one more to skip the row
             continue;
         }else{
-            //printf("NORMAL INST\n");
             inst = inst_fetch(line, inst);
-            //printf("op=%s, rd=%s, rs=%s, rt=%s, imm=%s\n", inst.op, inst.rd, inst.rs, inst.rt, inst.imm);
             enc_inst = encode_inst(inst, enc_inst, lroot);
-            //printf("op=%d, rd=%d, rs=%d, rt=%d, imm=%d\n", enc_inst.op, enc_inst.rd, enc_inst.rs, enc_inst.rt, enc_inst.imm);
-            //printf("MACHINE CODE IS %05X\n", generte_machine_code(enc_inst));
             MEM[line_counter] = generte_machine_code(enc_inst);
             line_counter++;
             if (is_itype(enc_inst)){
@@ -404,12 +355,6 @@ FILE* open_file(char name[], char mode[]){ // loads a file
     return f;
 }
 
-void print_MEM(int MEM[]){ // helper to print MEMORY
-    for (int i = 0; i < 4096; ++i) {
-        printf("%05X\n", MEM[i]);
-    }
-}
-
 int last_non_zero_element(int A[], int size){ // takes in an array and returns the position of last non-zero element
     int pos = size-1;
     while (A[pos] == 0){
@@ -425,16 +370,15 @@ void print_to_memin(int MEM[], FILE* memin){ // write to memin from MEM[] at the
     }
 }
 
-int main(int argc, char arg[]){
+int main(int argc, char *argv[]){
     FILE* asmfile, *memin;
     char path[500];
-    asmfile = open_file(arg[0], "r");
-    memin = open_file(arg[1], "w");
+    asmfile = open_file(argv[1], "r");
+    memin = open_file(argv[2], "w");
     int pc = 0;
     int label_counter = 0;
     int MEM[4096]={0};
     assembler(MEM, pc, label_counter, asmfile, memin);
-    //print_MEM(MEM);
     print_to_memin(MEM, memin);
     return 0;
 }
