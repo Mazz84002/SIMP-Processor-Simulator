@@ -3,7 +3,7 @@
 add $t0, $zero, $imm, 1	    # $t0 = 1
 out $t0, $zero, $imm, 0	   #enable irq0
 add $sp, $sp, $imm, -1              # make space in stack
-sw $s2, $sp, $imm, 2                # store $s0 in stack
+sw $s0, $sp, $imm, 2                # store $s0 in stack
 add $t0, $zero, $imm, draw_line	  # $t0 = address of draw_line
 out $t0, $zero, $imm, 6	   # set irqhandler as draw_line
 lw $t0, $zero, $imm, 256   #Set $t0 to be the value of 0x100 (first location)
