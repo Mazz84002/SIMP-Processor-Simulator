@@ -1,3 +1,4 @@
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -45,7 +46,7 @@ char *remove_white_spaces(char *str){
 int h2d(char line[]){
     if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || 
         line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || 
-        line[0] == 'E'  | line[0] == 'F'){
+        line[0] == 'E' || line[0] == 'F'){
         return (0xFFF00000 + strtol(line, (char **)NULL, 16));
     }
 
@@ -312,6 +313,8 @@ void assembler(int MEM[], int pc, int label_counter, FILE* asmfile, FILE* memin)
     char *token = NULL; // to store the tokens from a line
     struct instruction inst;
     struct encoded_instruction enc_inst;
+    inst.op = "add"; inst.rd = "zero"; inst.rs = "zero"; inst.rt = "zero"; inst.imm = "0"; // initialise to crap
+    enc_inst.op = 0; enc_inst.rd = 0; enc_inst.rs = 0; enc_inst.rt = 0; enc_inst.imm = 0;
     int increment_label = 0;
     static struct label* lroot = NULL;
     // ---------------------- FIRST PASS ----------------------
@@ -425,7 +428,7 @@ void print_to_memin(int MEM[], FILE* memin){ // write to memin from MEM[] at the
 int main(){
     FILE* asmfile, *memin;
     char path[500];
-    asmfile = open_file("Inputs/trial.asm", "r");
+    asmfile = open_file("Inputs/fib.asm", "r");
     memin = open_file("Outputs/memin.txt", "w");
     int pc = 0;
     int label_counter = 0;
