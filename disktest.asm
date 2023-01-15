@@ -1,5 +1,5 @@
 .word 0x100 0                       # sector1 at 256 in memin
-.word 0x101 1                       # sector2 at 257 in memin
+.word 0x101 6                       # sector2 at 257 in memin
 add $t0, $zero, $imm, 1             # $t0 = 1
 out $t0, $zero, $imm, 1             # enable irq1
 add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
