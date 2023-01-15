@@ -1,4 +1,4 @@
-.word 0x100 0   #Set the location of the upper left corner of the square to 0x100
+.word 0x100 2572   #Set the location of the upper left corner of the square to 0x100
 .word 0x101 76  #Set the length of each side of the square to memory location 0x101
 add $t0, $zero, $imm, 1	    # $t0 = 1
 out $t0, $zero, $imm, 0	   #enable irq0
