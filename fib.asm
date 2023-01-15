@@ -10,9 +10,9 @@ sw $s2, $sp, $imm, 2                # store $s0 in stack
 sw $s1, $sp, $imm, 1                # store $s1 in stack
 sw $s0, $sp, $imm, 0                # store $s2 in stack
 add $s0, $zero, $imm, 1             # fib(1)
-sw $s0, $zero, $imm, 256            # store fib(1)
+sw $s0, $zero, $imm, 0x100            # store fib(1)
 add $s1, $zero, $imm, 1             # fib(2)
-sw $s1, $zero, $imm, 257            # store fib(2)
+sw $s1, $zero, $imm, 0x101            # store fib(2)
 add $t2, $zero, $imm, 1             # $t2 = 1
 sll $t2, $t2, $imm, 19              # $t2 = 0x80000
 jal $ra, $imm, $zero, fib			# calc $v0 = fib(x)
@@ -21,7 +21,7 @@ bgt $imm, $a0, $a1, overflow        # if loc > 4096, overflow
 add $s2, $zero, $zero, 0            # $s2 = 0 for this loop
 add $s2, $s0, $s1, 0                # $s2 = $s0+$s1, $s2 has next fib num
 bgt $imm, $s2, $t2, overflow        # if fib(x) > 0x80000, overflow
-sw $s2, $a0, $imm, 257              # store word at current loc
+sw $s2, $a0, $imm, 0x101              # store word at current loc
 add $s0, $zero, $zero, 0
 add $s0, $zero, $s1, 0              # $s0 = $s1
 add $s1, $zero, $zero, 0
