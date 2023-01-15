@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "Resistivity Caculator": "python",
+        "*.c": "c",
+        "math.h": "c"
+    }
+}
