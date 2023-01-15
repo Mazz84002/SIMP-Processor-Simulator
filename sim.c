@@ -545,14 +545,14 @@ void generate_monitor(int MONITOR[], FILE* monitor){ // generates monitor from M
 void generate_diskout(int DISK[][128], FILE* diskout){ // generates diskout from DISK[]
     for (int i = 0; i < 128; ++i) {
         for (int j = 0; j < 128; ++j) {
-            fprintf(diskout, "%05X\n", DISK[i][j]);
+            fprintf(diskout, "%05X\n", DISK[i][j] & 0x000FFFFF);
         }
     }
 }
 
 void generate_regout(FILE* regout){ // generates regout
     for (int i = 2; i < 16; ++i) {
-        fprintf(regout, "%05X\n", REG[i]);
+        fprintf(regout, "%05X\n", REG[i] & 0x000FFFFF);
     }
 }
 
@@ -584,9 +584,6 @@ int main(int argc, char *argv[]){
 
 
     simulator(MEM, MONITOR, DISK, irq2, trace, cycles, leds, irq2in, display7seg, hwregtrace);
-    //print_memory(MEM);
-    //print_disk(DISK);
-    //print_monitor(MONITOR);
 
     // Generating output files
     generate_memout(MEM, memout);
