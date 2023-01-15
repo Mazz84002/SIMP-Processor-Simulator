@@ -1,7 +1,9 @@
-.word 0x100 2572   #Set the location of the upper left corner of the square to 0x100
+.word 0x100 0   #Set the location of the upper left corner of the square to 0x100
 .word 0x101 76  #Set the length of each side of the square to memory location 0x101
 add $t0, $zero, $imm, 1	    # $t0 = 1
 out $t0, $zero, $imm, 0	   #enable irq0
+add $sp, $sp, $imm, -1              # make space in stack
+sw $s2, $sp, $imm, 2                # store $s0 in stack
 add $t0, $zero, $imm, draw_line	  # $t0 = address of draw_line
 out $t0, $zero, $imm, 6	   # set irqhandler as draw_line
 lw $t0, $zero, $imm, 256   #Set $t0 to be the value of 0x100 (first location)
@@ -20,6 +22,8 @@ out $t2, $zero, $imm, 21   #set pixel color to white
 add $t2, $zero, $imm, 1  #$t2 = 1-this will be used to draw the pixels to be white
 add $a0, $zero, $imm, 1     # $a0 = 1
 out $a0, $zero, $imm, 3     # enable irqstatus0
+lw $s0, $sp, $imm, 0                # restore $s0
+add $sp, $sp, $imm, 1               # clear stack
 halt $zero, $zero, $zero, 0   # exit the program
 draw_line:
 out $t0, $zero, $imm, 20   #update address of where we will place the pixel to $t0
@@ -36,4 +40,6 @@ sub $t0, $t0, $t1, 0   #$t0 -= $t1 = length so we go back to the left side of th
 sub $s1, $s1, $imm, 1   #$s1-- -when this reaches 0 we have drawn all of the columns needed-
 beq $imm, $zero, $zero, draw_line  #jump back to draw_line
 error:
+lw $s0, $sp, $imm, 0                # restore $s0
+add $sp, $sp, $imm, 1               # clear stack
 halt $zero, $zero, $zero, 0	   #we have reached an error so we end the program
