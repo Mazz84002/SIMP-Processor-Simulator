@@ -45,7 +45,7 @@ int perform_op(struct instruction inst, int pc, int MEM[], int MONITOR[], int DI
 
 
 int h2d(char line[]){ // converts hexadecimal to integer
-    if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || line[0] == 'E' || line[0] == 'F'){
+    if (line[0] == '8' || line[0] == '9' || line[0] == 'A' || line[0] == 'B' || line[0] == 'C' || line[0] == 'D' || line[0] == 'E'  || line[0] == 'F'){
         return (int)(0xFFF00000 + strtol(line, (char **)NULL, 16));
     }
 
@@ -545,14 +545,14 @@ void generate_monitor(int MONITOR[], FILE* monitor){ // generates monitor from M
 void generate_diskout(int DISK[][128], FILE* diskout){ // generates diskout from DISK[]
     for (int i = 0; i < 128; ++i) {
         for (int j = 0; j < 128; ++j) {
-            fprintf(diskout, "%05X\n", DISK[i][j]);
+            fprintf(diskout, "%05X\n", DISK[i][j] & 0x000FFFFF);
         }
     }
 }
 
 void generate_regout(FILE* regout){ // generates regout
     for (int i = 2; i < 16; ++i) {
-        fprintf(regout, "%05X\n", REG[i]);
+        fprintf(regout, "%05X\n", REG[i] & 0x000FFFFF);
     }
 }
 
@@ -584,9 +584,6 @@ int main(int argc, char *argv[]){
 
 
     simulator(MEM, MONITOR, DISK, irq2, trace, cycles, leds, irq2in, display7seg, hwregtrace);
-    //print_memory(MEM);
-    //print_disk(DISK);
-    //print_monitor(MONITOR);
 
     // Generating output files
     generate_memout(MEM, memout);
