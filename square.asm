@@ -2,8 +2,9 @@
 .word 0x101 76  #Set the length of each side of the square to memory location 0x101
 add $t0, $zero, $imm, 1	    # $t0 = 1
 out $t0, $zero, $imm, 0	   #enable irq0
-add $sp, $sp, $imm, -1              # make space in stack
-sw $s0, $sp, $imm, 2                # store $s0 in stack
+add $sp, $sp, $imm, -2              # make space in stack
+sw $s0, $sp, $imm, 0                # store $s0 in stack
+sw $ra, $sp, $imm, 1                # store $ra
 add $t0, $zero, $imm, draw_line	  # $t0 = address of draw_line
 out $t0, $zero, $imm, 6	   # set irqhandler as draw_line
 lw $t0, $zero, $imm, 256   #Set $t0 to be the value of 0x100 (first location)
@@ -23,7 +24,8 @@ add $t2, $zero, $imm, 1  #$t2 = 1-this will be used to draw the pixels to be whi
 add $a0, $zero, $imm, 1     # $a0 = 1
 out $a0, $zero, $imm, 3     # enable irqstatus0
 lw $s0, $sp, $imm, 0                # restore $s0
-add $sp, $sp, $imm, 1               # clear stack
+lw $ra, $sp, $imm, 1                # store $ra
+add $sp, $sp, $imm, 2               # clear stack
 halt $zero, $zero, $zero, 0   # exit the program
 draw_line:
 out $t0, $zero, $imm, 20   #update address of where we will place the pixel to $t0
@@ -41,5 +43,6 @@ sub $s1, $s1, $imm, 1   #$s1-- -when this reaches 0 we have drawn all of the col
 beq $imm, $zero, $zero, draw_line  #jump back to draw_line
 error:
 lw $s0, $sp, $imm, 0                # restore $s0
-add $sp, $sp, $imm, 1               # clear stack
+lw $ra, $sp, $imm, 1                # store $ra
+add $sp, $sp, $imm, 2               # clear stack
 halt $zero, $zero, $zero, 0	   #we have reached an error so we end the program
