@@ -1,11 +1,11 @@
 add $t2, $zero, $imm, 1				# $t2 = 1
 out $t2, $zero, $imm, 2				# enable irq2
-sll $sp, $t2, $imm, 11				# set $sp = 1 << 11 = 2048
 add $t2, $zero, $imm, L3			# $t1 = address of L3
 out $t2, $zero, $imm, 6				# set irqhandler as L3
 add $a0, $zero, $imm, 1             # starting point of input relative add
 add $a1, $zero, $imm, 3839          # end point of the function 3839 = 4096-257
-add $sp, $sp, $imm, -3              # make space in stack
+add $sp, $sp, $imm, -4              # make space in stack
+sw $ra, $sp, $imm, 3                # store $ra in stack
 sw $s2, $sp, $imm, 2                # store $s0 in stack
 sw $s1, $sp, $imm, 1                # store $s1 in stack
 sw $s0, $sp, $imm, 0                # store $s2 in stack
@@ -33,7 +33,8 @@ overflow:
 lw $s0, $sp, $imm, 0                # restore $s0
 lw $s1, $sp, $imm, 1                # restore $s1
 lw $s2, $sp, $imm, 2                # restore $s2
-add $sp, $sp, $imm, 3               # clear stack
+lw $ra, $sp, $imm, 3                # restore $ra
+add $sp, $sp, $imm, 4               # clear stack
 halt $zero, $zero, $zero, 0			# halt
 L3:
 in $t1, $zero, $imm, 9				# read leds register into $t1
