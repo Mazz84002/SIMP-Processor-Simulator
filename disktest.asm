@@ -43,7 +43,7 @@ lw $s0, $sp, $imm, 0                # restore $s0
 lw $s1, $sp, $imm, 1                # restore $s1
 lw $s2, $sp, $imm, 2                # restore $s2
 lw $ra, $sp, $imm, 3                # restore $ra
-add $sp, $sp, $imm, 3               # clear stack
+add $sp, $sp, $imm, 4               # clear stack
 halt $zero, $zero, $zero, 0
 SUM_FIRST_SECTOR:
 bge $imm, $t1, $a3, MEDIATOR1        # when you read the first eight entries, go to mediator
