@@ -552,7 +552,7 @@ void generate_diskout(int DISK[][128], FILE* diskout){ // generates diskout from
 
 void generate_regout(FILE* regout){ // generates regout
     for (int i = 2; i < 16; ++i) {
-        fprintf(regout, "%05X\n", REG[i] & 0x000FFFFF);
+        fprintf(regout, "%08X\n", REG[i]);
     }
 }
 
