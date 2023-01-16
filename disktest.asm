@@ -4,7 +4,8 @@ add $t0, $zero, $imm, 1             # $t0 = 1
 out $t0, $zero, $imm, 1             # enable irq1
 add $t2, $zero, $imm, SUM_FIRST_SECTOR		    # $t2 = address of SUM1
 out $t2, $zero, $imm, 6				# set irqhandler as SUM1
-add $sp, $sp, $imm, -3              # make space in stack
+add $sp, $sp, $imm, -4              # make space in stack
+sw $ra, $sp, $imm, 3                # store $s0 in stack
 sw $s2, $sp, $imm, 2                # store $s0 in stack
 sw $s1, $sp, $imm, 1                # store $s1 in stack
 sw $s0, $sp, $imm, 0                # store $s2 in stack
@@ -41,6 +42,7 @@ sw $s2, $zero, $imm, 258            # store the bigger value at 0x102
 lw $s0, $sp, $imm, 0                # restore $s0
 lw $s1, $sp, $imm, 1                # restore $s1
 lw $s2, $sp, $imm, 2                # restore $s2
+lw $ra, $sp, $imm, 3                # restore $ra
 add $sp, $sp, $imm, 3               # clear stack
 halt $zero, $zero, $zero, 0
 SUM_FIRST_SECTOR:
@@ -69,11 +71,13 @@ sw $s1, $zero, $imm, 258            # store the bigger value at 0x102
 lw $s0, $sp, $imm, 0                # restore $s0
 lw $s1, $sp, $imm, 1                # restore $s1
 lw $s2, $sp, $imm, 2                # restore $s2
-add $sp, $sp, $imm, 3               # clear stack
+lw $ra, $sp, $imm, 3                # restore $ra
+add $sp, $sp, $imm, 4               # clear stack
 halt $zero, $zero, $zero, 0
 DIRECTHAULT:
 lw $s0, $sp, $imm, 0                # restore $s0
 lw $s1, $sp, $imm, 1                # restore $s1
 lw $s2, $sp, $imm, 2                # restore $s2
-add $sp, $sp, $imm, 3               # clear stack
+lw $ra, $sp, $imm, 3                # restore $ra
+add $sp, $sp, $imm, 4               # clear stack
 halt $zero, $zero, $zero, 0         # hault instruction
