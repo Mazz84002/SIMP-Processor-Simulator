@@ -1,0 +1,8 @@
+[
+{
+  "directory": "/Users/mazz/University-Projects/SIMP-Processor-Simulator/build",
+  "command": "/usr/bin/clang   -g -std=gnu99 -arch arm64 -o CMakeFiles/simp-processor-simulator.dir/sim.c.o -c /Users/mazz/University-Projects/SIMP-Processor-Simulator/sim.c",
+  "file": "/Users/mazz/University-Projects/SIMP-Processor-Simulator/sim.c",
+  "output": "CMakeFiles/simp-processor-simulator.dir/sim.c.o"
+}
+]

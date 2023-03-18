@@ -12,7 +12,11 @@
 						"string" : "3.23"
 					},
 					"projectIndex" : 0,
-					"source" : "."
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0
+					]
 				}
 			],
 			"name" : "Debug",
@@ -23,10 +27,23 @@
 					[
 						0
 					],
-					"name" : "Computer_Organisation"
+					"name" : "Computer_Organisation",
+					"targetIndexes" : 
+					[
+						0
+					]
 				}
 			],
-			"targets" : []
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "simp-processor-simulator::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-simp-processor-simulator-Debug-326aaeb24c5e1f54454e.json",
+					"name" : "simp-processor-simulator",
+					"projectIndex" : 0
+				}
+			]
 		}
 	],
 	"kind" : "codemodel",
@@ -38,6 +55,6 @@
 	"version" : 
 	{
 		"major" : 2,
-		"minor" : 4
+		"minor" : 5
 	}
 }

@@ -1,0 +1,1 @@
+/usr/bin/clang -g -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names "CMakeFiles/simp-processor-simulator.dir/sim.c.o" -o simp-processor-simulator 
